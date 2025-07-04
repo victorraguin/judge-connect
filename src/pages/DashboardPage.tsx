@@ -461,8 +461,10 @@ export function DashboardPage() {
                   key={question.id}
                   question={question}
                   onClick={() => {
-                    // Navigate to question detail
-                    console.log('Navigate to question:', question.id)
+                    // Navigate to conversation if exists
+                    if (question.status !== 'waiting_for_judge') {
+                      window.location.href = `/conversation/${question.id}`
+                    }
                   }}
                 />
               ))}

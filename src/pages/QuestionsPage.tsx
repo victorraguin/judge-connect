@@ -218,8 +218,16 @@ export function QuestionsPage() {
                 key={question.id}
                 question={question}
                 onClick={() => {
-                  // Navigate to question detail
-                  console.log('Navigate to question:', question.id)
+                  // Navigate to conversation or question detail
+                  if (question.status !== 'waiting_for_judge') {
+                    // Try to find existing conversation
+                    window.location.href = `/conversation/${question.id}`
+                  } else {
+                    // For judges, allow taking the question
+                    if (user?.profile?.role === 'judge') {
+                      window.location.href = `/conversation/${question.id}`
+                    }
+                  }
                 }}
               />
             ))

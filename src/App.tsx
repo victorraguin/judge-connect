@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { QuestionsPage } from './pages/QuestionsPage'
 import { JudgesPage } from './pages/JudgesPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { ConversationPage } from './pages/ConversationPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { LoginForm } from './components/auth/LoginForm'
 import { RegisterForm } from './components/auth/RegisterForm'
@@ -30,6 +31,7 @@ function AppContent() {
             <Route path="/questions" element={<QuestionsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/conversation/:id" element={<ConversationPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Sparkles, Bell, User, LogOut, Crown, Star } from 'lucide-react'
+import { Sparkles, Bell, User, LogOut, Crown, Star, Settings } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../ui/Button'
 
@@ -83,6 +83,11 @@ export function Header() {
                   <Bell className="h-4 w-4" />
                   <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
                 </Button>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="hidden sm:flex">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <div className="hidden md:flex items-center space-x-3">
                   <div className="flex items-center space-x-2 bg-gray-800 rounded-lg px-3 py-2 max-w-[200px]">
                     {getRoleIcon(user.profile?.role || 'user')}
@@ -106,6 +111,11 @@ export function Header() {
                       {user.profile?.full_name?.split(' ')[0] || user.email.split('@')[0]}
                     </span>
                   </div>
+                  <Link to="/profile">
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={signOut}>
                     <LogOut className="h-4 w-4" />
                   </Button>

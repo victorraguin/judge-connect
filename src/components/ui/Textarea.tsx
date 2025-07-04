@@ -7,14 +7,16 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   helperText?: string
 }
 
-export function Textarea({
-  label,
-  error,
-  helperText,
-  className,
-  id,
-  ...props
-}: TextareaProps) {
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>((textareaProps, ref) => {
+  const {
+    label,
+    error,
+    helperText,
+    className,
+    id,
+    ...props
+  } = textareaProps
+
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
 
   return (
@@ -25,9 +27,10 @@ export function Textarea({
         </label>
       )}
       <textarea
+        ref={ref}
         id={inputId}
         className={clsx(
-          'block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base transition-colors min-h-[120px] px-4 py-3',
+          'block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base transition-colors min-h-[120px] px-4 py-3 resize-none',
           error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
           className
         )}
@@ -41,4 +44,4 @@ export function Textarea({
       )}
     </div>
   )
-}
+})

@@ -8,6 +8,7 @@ import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { QuestionsPage } from './pages/QuestionsPage'
 import { JudgesPage } from './pages/JudgesPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { LoginForm } from './components/auth/LoginForm'
 import { RegisterForm } from './components/auth/RegisterForm'
 import { useAuth } from './contexts/AuthContext'
@@ -27,6 +28,7 @@ function AppContent() {
             <Route path="/home" element={<HomePage />} />
             <Route path="/questions" element={<QuestionsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />
           </Routes>

@@ -53,11 +53,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       console.log('AuthContext signIn called')
-      const result = await authService.signIn(email, password)
-      console.log('SignIn result:', result)
+      await authService.signIn(email, password)
+      console.log('SignIn completed successfully')
       
-      // Wait a bit for the auth state change to trigger
-      setTimeout(async () => {
+      // Force refresh the user state
+      const user = await authService.getCurrentUser()
+      if (user) {
+        console.log('User loaded after sign in:', user)
+        setUser(user)
+      } else {
+        throw new Error('Failed to load user after sign in')
+      }
+    } catch (error) {
+      console.error('SignIn error in context:', error)
+      throw error
+    }
+  }
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    try {
+      console.log('AuthContext signUp called')
+      await authService.signUp(email, password, fullName)
+      console.log('SignUp completed successfully')
+      
+      // Force refresh the user state
+      const user = await authService.getCurrentUser()
+      if (user) {
+        console.log('User loaded after sign up:', user)
+        setUser(user)
+      } else {
+        // For sign up, user might not be immediately available due to email confirmation
+        console.log('User not immediately available after sign up (normal for email confirmation)')
+      }
+    } catch (error) {
+      console.error('SignUp error in context:', error)
+      throw error
+    }
+  }
+
+  const signOut = async () => {
+    try {
+      console.log('AuthContext signOut called')
+      await authService.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('SignOut error in context:', error)
+      throw error
+    }
+  }
+
+  const value = {
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
         const user = await authService.getCurrentUser()
         console.log('User after sign in:', user)
         setUser(user)

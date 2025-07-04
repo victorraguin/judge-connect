@@ -31,8 +31,10 @@ export function LoginForm() {
       await signIn(data.email, data.password)
       console.log('Login successful, navigating to home')
       
-      // Navigate immediately after successful sign in
-      navigate('/')
+      // Add a small delay to ensure state is updated
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'Une erreur est survenue')

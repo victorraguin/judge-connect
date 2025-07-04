@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { QuestionsPage } from './pages/QuestionsPage'
 import { JudgesPage } from './pages/JudgesPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { LoginForm } from './components/auth/LoginForm'
 import { RegisterForm } from './components/auth/RegisterForm'
 import { useAuth } from './contexts/AuthContext'
@@ -29,6 +30,7 @@ function AppContent() {
             <Route path="/questions" element={<QuestionsPage />} />
             <Route path="/judges" element={<JudgesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />
           </Routes>

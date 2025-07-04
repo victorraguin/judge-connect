@@ -45,15 +45,22 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
     
-    if (!user) return null
+    if (error || !user) {
+      console.log('No authenticated user found:', error?.message)
+      return null
+    }
+
+    console.log('Found authenticated user:', user.id, user.email)
 
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
+
+    console.log('User profile:', profile)
 
     return {
       id: user.id,
@@ -64,10 +71,19 @@ export const authService = {
 
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id)
+      
       if (session?.user) {
-        const user = await authService.getCurrentUser()
-        callback(user)
+        try {
+          const user = await authService.getCurrentUser()
+          console.log('Auth state change - user loaded:', user)
+          callback(user)
+        } catch (error) {
+          console.error('Error loading user in auth state change:', error)
+          callback(null)
+        }
       } else {
+        console.log('Auth state change - no session, setting user to null')
         callback(null)
       }
     })

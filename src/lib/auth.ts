@@ -24,12 +24,14 @@ export const authService = {
   },
 
   async signIn(email: string, password: string) {
+    console.log('Attempting to sign in with:', email)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) throw error
+    console.log('Sign in successful:', data.user?.id)
     return data
   },
 
@@ -58,6 +60,7 @@ export const authService = {
 
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id)
       if (session?.user) {
         const user = await authService.getCurrentUser()
         callback(user)

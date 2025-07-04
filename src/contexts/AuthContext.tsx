@@ -53,15 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       console.log('AuthContext signIn called')
-      const result = await authService.signIn(email, password)
+      await authService.signIn(email, password)
       console.log('SignIn result:', result)
       
-      // Force reload user after successful sign in
-      const user = await authService.getCurrentUser()
-      console.log('User after sign in:', user)
-      setUser(user)
-      
-      return result
+      // Wait a bit for the auth state change to trigger
+      setTimeout(async () => {
+        const user = await authService.getCurrentUser()
+        console.log('User after sign in:', user)
+        setUser(user)
+      }, 100)
     } catch (error) {
       console.error('SignIn error in context:', error)
       throw error
@@ -71,15 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       console.log('AuthContext signUp called')
-      const result = await authService.signUp(email, password, fullName)
+      await authService.signUp(email, password, fullName)
       console.log('SignUp result:', result)
       
-      // Force reload user after successful sign up
-      const user = await authService.getCurrentUser()
-      console.log('User after sign up:', user)
-      setUser(user)
-      
-      return result
+      // Wait a bit for the auth state change to trigger
+      setTimeout(async () => {
+        const user = await authService.getCurrentUser()
+        console.log('User after sign up:', user)
+        setUser(user)
+      }, 100)
     } catch (error) {
       console.error('SignUp error in context:', error)
       throw error

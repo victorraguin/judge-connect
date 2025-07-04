@@ -54,13 +54,39 @@ export const authService = {
 
     console.log('Found authenticated user:', user.id, user.email)
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
 
-    console.log('User profile:', profile)
+    console.log('User profile query result:', { profile, profileError })
+
+    // If profile doesn't exist, create it
+    if (!profile && !profileError) {
+      console.log('No profile found, creating one...')
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email!,
+          full_name: user.user_metadata?.full_name || '',
+          role: 'user',
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating profile:', createError)
+      } else {
+        console.log('Profile created successfully:', newProfile)
+        return {
+          id: user.id,
+          email: user.email!,
+          profile: newProfile,
+        }
+      }
+    }
 
     return {
       id: user.id,

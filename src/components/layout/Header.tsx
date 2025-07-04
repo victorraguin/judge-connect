@@ -79,18 +79,18 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative hidden sm:flex">
                   <Bell className="h-4 w-4" />
                   <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
                 </Button>
-                <div className="hidden sm:flex items-center space-x-3">
-                  <div className="flex items-center space-x-2 bg-gray-800 rounded-lg px-3 py-2">
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 bg-gray-800 rounded-lg px-3 py-2 max-w-[200px]">
                     {getRoleIcon(user.profile?.role || 'user')}
-                    <span className="text-sm text-gray-300">
+                    <span className="text-sm text-gray-300 truncate">
                       {user.profile?.full_name || user.email}
                     </span>
                     {user.profile?.role === 'judge' && (
-                      <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
                         JUGE
                       </span>
                     )}
@@ -99,14 +99,20 @@ export function Header() {
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="sm:hidden">
+                <div className="md:hidden flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 bg-gray-800 rounded-lg px-2 py-1">
+                    {getRoleIcon(user.profile?.role || 'user')}
+                    <span className="text-xs text-gray-300 max-w-[80px] truncate">
+                      {user.profile?.full_name?.split(' ')[0] || user.email.split('@')[0]}
+                    </span>
+                  </div>
                   <Button variant="ghost" size="sm" onClick={signOut}>
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
               </>
             ) : (
-              <div className="flex items-center space-x-2 flex-col sm:flex-row gap-2 sm:gap-2">
+              <div className="flex items-center space-x-2">
                 <Link to="/login">
                   <Button variant="outline" size="sm">Connexion</Button>
                 </Link>

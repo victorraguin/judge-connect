@@ -79,6 +79,7 @@ export function LoginForm() {
               })}
               error={errors.email?.message}
               placeholder="votre@email.com"
+              autoComplete="email"
             />
             
             <Input
@@ -89,6 +90,7 @@ export function LoginForm() {
               })}
               error={errors.password?.message}
               placeholder="••••••••"
+              autoComplete="current-password"
             />
 
             <Button

@@ -79,6 +79,7 @@ export function RegisterForm() {
               })}
               error={errors.fullName?.message}
               placeholder="Votre nom complet"
+              autoComplete="name"
             />
             
             <Input
@@ -93,6 +94,7 @@ export function RegisterForm() {
               })}
               error={errors.email?.message}
               placeholder="votre@email.com"
+              autoComplete="email"
             />
             
             <Input
@@ -107,6 +109,7 @@ export function RegisterForm() {
               })}
               error={errors.password?.message}
               placeholder="••••••••"
+              autoComplete="new-password"
             />
             
             <Input
@@ -119,6 +122,7 @@ export function RegisterForm() {
               })}
               error={errors.confirmPassword?.message}
               placeholder="••••••••"
+              autoComplete="new-password"
             />
 
             <Button

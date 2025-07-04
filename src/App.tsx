@@ -5,14 +5,18 @@ import { AuthProvider } from './contexts/AuthContext'
 import { Header } from './components/layout/Header'
 import { Footer } from './components/layout/Footer'
 import { HomePage } from './pages/HomePage'
+import { DashboardPage } from './pages/DashboardPage'
 import { QuestionsPage } from './pages/QuestionsPage'
 import { JudgesPage } from './pages/JudgesPage'
 import { LoginForm } from './components/auth/LoginForm'
 import { RegisterForm } from './components/auth/RegisterForm'
+import { useAuth } from './contexts/AuthContext'
 
 const queryClient = new QueryClient()
 
 function App() {
+  const { user } = useAuth()
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -21,7 +25,8 @@ function App() {
             <Header />
             <main>
               <Routes>
-                <Route path="/" element={<HomePage />} />
+                <Route path="/" element={user ? <DashboardPage /> : <HomePage />} />
+                <Route path="/home" element={<HomePage />} />
                 <Route path="/questions" element={<QuestionsPage />} />
                 <Route path="/judges" element={<JudgesPage />} />
                 <Route path="/login" element={<LoginForm />} />

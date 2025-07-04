@@ -9,7 +9,7 @@ export function Header() {
   const location = useLocation()
 
   const navigation = [
-    { name: 'Accueil', href: '/', current: location.pathname === '/' },
+    { name: user ? 'Dashboard' : 'Accueil', href: '/', current: location.pathname === '/' },
     { name: 'Questions', href: '/questions', current: location.pathname === '/questions' },
     { name: 'Juges', href: '/judges', current: location.pathname === '/judges' },
   ]

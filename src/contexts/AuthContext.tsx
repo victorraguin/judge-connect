@@ -25,81 +25,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial user
-    const initializeAuth = async () => {
-      try {
-        console.log('Initializing auth context...')
-        const user = await authService.getCurrentUser()
-        console.log('Initial user loaded:', user)
-        setUser(user)
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
+    authService.getCurrentUser().then(setUser).finally(() => setLoading(false))
 
     // Listen for auth changes
-    const { data: { subscription } } = authService.onAuthStateChange((user) => {
-      console.log('Auth context received user update:', user)
-      setUser(user)
-    })
+    const { data: { subscription } } = authService.onAuthStateChange(setUser)
 
     return () => subscription.unsubscribe()
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    try {
-      console.log('AuthContext signIn called')
-      await authService.signIn(email, password)
-      console.log('SignIn completed successfully')
-      
-      // Force refresh the user state
-      const user = await authService.getCurrentUser()
-      if (user) {
-        console.log('User loaded after sign in:', user)
-        setUser(user)
-      } else {
-        throw new Error('Failed to load user after sign in')
-      }
-    } catch (error) {
-      console.error('SignIn error in context:', error)
-      throw error
-    }
+    await authService.signIn(email, password)
   }
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    try {
-      console.log('AuthContext signUp called')
-      await authService.signUp(email, password, fullName)
-      console.log('SignUp completed successfully')
-      
-      // Force refresh the user state
-      const user = await authService.getCurrentUser()
-      if (user) {
-        console.log('User loaded after sign up:', user)
-        setUser(user)
-      } else {
-        // For sign up, user might not be immediately available due to email confirmation
-        console.log('User not immediately available after sign up (normal for email confirmation)')
-      }
-    } catch (error) {
-      console.error('SignUp error in context:', error)
-      throw error
-    }
+    await authService.signUp(email, password, fullName)
   }
 
   const signOut = async () => {
-    try {
-      console.log('AuthContext signOut called')
-      await authService.signOut()
-      setUser(null)
-    } catch (error) {
-      console.error('SignOut error in context:', error)
-      throw error
-    }
+    await authService.signOut()
   }
 
   const value = {

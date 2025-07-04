@@ -32,16 +32,9 @@ export function RegisterForm() {
     try {
       setLoading(true)
       setError('')
-      console.log('Register form submission:', data.email, data.fullName)
       await signUp(data.email, data.password, data.fullName)
-      console.log('Register successful, navigating to home')
-      
-      // Add a small delay to ensure state is updated
-      setTimeout(() => {
-        navigate('/')
-      }, 100)
+      navigate('/')
     } catch (err: any) {
-      console.error('Register error:', err)
       setError(err.message || 'Une erreur est survenue')
     } finally {
       setLoading(false)
@@ -84,7 +77,6 @@ export function RegisterForm() {
               })}
               error={errors.fullName?.message}
               placeholder="Votre nom complet"
-              autoComplete="name"
             />
             
             <Input
@@ -99,7 +91,6 @@ export function RegisterForm() {
               })}
               error={errors.email?.message}
               placeholder="votre@email.com"
-              autoComplete="email"
             />
             
             <Input
@@ -114,7 +105,6 @@ export function RegisterForm() {
               })}
               error={errors.password?.message}
               placeholder="••••••••"
-              autoComplete="new-password"
             />
             
             <Input
@@ -127,7 +117,6 @@ export function RegisterForm() {
               })}
               error={errors.confirmPassword?.message}
               placeholder="••••••••"
-              autoComplete="new-password"
             />
 
             <Button

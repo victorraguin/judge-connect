@@ -27,16 +27,9 @@ export function LoginForm() {
     try {
       setLoading(true)
       setError('')
-      console.log('Login form submission:', data.email)
       await signIn(data.email, data.password)
-      console.log('Login successful, navigating to home')
-      
-      // Add a small delay to ensure state is updated
-      setTimeout(() => {
-        navigate('/')
-      }, 100)
+      navigate('/')
     } catch (err: any) {
-      console.error('Login error:', err)
       setError(err.message || 'Une erreur est survenue')
     } finally {
       setLoading(false)
@@ -84,7 +77,6 @@ export function LoginForm() {
               })}
               error={errors.email?.message}
               placeholder="votre@email.com"
-              autoComplete="email"
             />
             
             <Input
@@ -95,7 +87,6 @@ export function LoginForm() {
               })}
               error={errors.password?.message}
               placeholder="••••••••"
-              autoComplete="current-password"
             />
 
             <Button

@@ -84,7 +84,6 @@ export const authService = {
 
         if (createError) {
           console.error('Error creating profile:', createError)
-          // Return user without profile if creation fails
           return {
             id: user.id,
             email: user.email!,
@@ -138,48 +137,6 @@ export const authService = {
           console.error('Error loading user after token refresh:', error)
           callback(null)
         }
-      }
-    })
-  },
-}
-        return {
-          id: user.id,
-          email: user.email!,
-          profile: undefined,
-        }
-      } else {
-        console.log('Profile created successfully:', newProfile)
-        return {
-          id: user.id,
-          email: user.email!,
-          profile: newProfile,
-        }
-      }
-    }
-
-    return {
-      id: user.id,
-      email: user.email!,
-      profile: profile || undefined,
-    }
-  },
-
-  onAuthStateChange(callback: (user: AuthUser | null) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.id)
-      
-      if (session?.user) {
-        try {
-          const user = await authService.getCurrentUser()
-          console.log('Auth state change - user loaded:', user)
-          callback(user)
-        } catch (error) {
-          console.error('Error loading user in auth state change:', error)
-          callback(null)
-        }
-      } else {
-        console.log('Auth state change - no session, setting user to null')
-        callback(null)
       }
     })
   },

@@ -65,7 +65,7 @@ export function ConversationPage() {
           user:profiles!conversations_user_id_fkey(*),
           judge:profiles!conversations_judge_id_fkey(*)
         `)
-        .eq('id', id)
+        .or(`id.eq.${id},question_id.eq.${id}`)
         .single()
 
       // If no conversation found, try to find by question ID and create one

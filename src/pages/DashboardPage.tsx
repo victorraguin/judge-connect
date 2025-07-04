@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, MessageSquare, Crown, Star, Clock, TrendingUp, Camera, Image as ImageIcon, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -39,6 +40,7 @@ const categories = [
 
 export function DashboardPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats>({
     myQuestions: 0,
     pendingQuestions: 0,
@@ -463,7 +465,7 @@ export function DashboardPage() {
                   onClick={() => {
                     // Navigate to conversation if exists
                     if (question.status !== 'waiting_for_judge') {
-                      window.location.href = `/conversation/${question.id}`
+                      navigate(`/conversation/${question.id}`)
                     }
                   }}
                 />

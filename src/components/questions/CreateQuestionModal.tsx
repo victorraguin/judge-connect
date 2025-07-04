@@ -134,7 +134,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Poser une question MTG" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Poser une question MTG" size="xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {error && (
           <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-lg flex items-start">
@@ -159,12 +159,12 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               Catégorie <span className="text-red-400">*</span>
             </label>
             <select
               {...register('category', { required: 'La catégorie est requise' })}
-              className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base min-h-[44px] px-4 py-3 transition-colors"
+              className="block w-full rounded-lg bg-gray-700 border-gray-500 text-white shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base min-h-[44px] px-4 py-3 transition-colors"
             >
               <option value="">Sélectionnez une catégorie</option>
               {categories.map((category) => (
@@ -179,7 +179,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               Description détaillée <span className="text-red-400">*</span>
             </label>
             <textarea
@@ -191,13 +191,8 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 },
               })}
               rows={6}
-              className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base transition-colors min-h-[120px] px-4 py-3 resize-none"
-              placeholder="Décrivez votre question avec le maximum de détails possible...
-
-Exemple :
-- Cartes impliquées : Counterspell, Lightning Bolt
-- Étape du jeu : Main phase 1
-- Contexte : Mon adversaire lance Lightning Bolt sur ma créature..."
+              className="block w-full rounded-lg bg-gray-700 border-gray-500 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[120px] px-4 py-3 resize-none"
+              placeholder="Décrivez votre situation de jeu en détail : cartes impliquées, étape du tour, contexte..."
             />
             <div className="flex justify-between items-center mt-1">
               {errors.content && (
@@ -215,7 +210,7 @@ Exemple :
           {/* Selected Cards */}
           {selectedCards.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 Cartes sélectionnées ({selectedCards.length})
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -267,7 +262,7 @@ Exemple :
 
           {/* Image Upload Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               Image (optionnel)
             </label>
             
@@ -343,10 +338,10 @@ Exemple :
                 type="checkbox"
                 id="is_public"
                 {...register('is_public')}
-                className="h-4 w-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 mt-1"
+                className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 mt-1"
               />
               <div className="flex-1">
-                <label htmlFor="is_public" className="flex items-center text-sm font-medium text-gray-300 cursor-pointer">
+                <label htmlFor="is_public" className="flex items-center text-sm font-medium text-gray-200 cursor-pointer">
                   {isPublic ? (
                     <Globe className="h-4 w-4 mr-2 text-green-400" />
                   ) : (

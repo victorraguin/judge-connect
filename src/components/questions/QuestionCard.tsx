@@ -9,9 +9,10 @@ interface QuestionCardProps {
   question: Question
   onClick?: () => void
   showActions?: boolean
+  showChatIndicator?: boolean
 }
 
-export function QuestionCard({ question, onClick, showActions = false }: QuestionCardProps) {
+export function QuestionCard({ question, onClick, showActions = false, showChatIndicator = true }: QuestionCardProps) {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'waiting_for_judge':
@@ -100,7 +101,7 @@ export function QuestionCard({ question, onClick, showActions = false }: Questio
               <span>0</span>
             </div>
           )}
-          {hasConversation && (
+          {hasConversation && showChatIndicator && (
             <div className="flex items-center space-x-1 text-blue-400">
               <MessageSquare className="h-4 w-4" />
               <span className="text-xs">Chat</span>

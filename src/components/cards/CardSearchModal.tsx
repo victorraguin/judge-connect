@@ -48,9 +48,17 @@ export function CardSearchModal({ isOpen, onClose, onSelectCard }: CardSearchMod
       setLoading(true)
       setError('')
 
-      const response = await fetch(
-        `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=name&unique=cards`
+      // Try searching in multiple languages
+      let response = await fetch(
+        `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=name&unique=cards&include_multilingual=true`
       )
+
+      // If no results, try with French language specific search
+      if (!response.ok && response.status === 404) {
+        response = await fetch(
+          `https://api.scryfall.com/cards/search?q=name:"${encodeURIComponent(query)}" OR french:"${encodeURIComponent(query)}"&order=name&unique=cards`
+        )
+      }
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -96,13 +104,13 @@ export function CardSearchModal({ isOpen, onClose, onSelectCard }: CardSearchMod
     <Modal isOpen={isOpen} onClose={onClose} title="Rechercher une carte MTG" size="lg">
       <div className="space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Nom de la carte (ex: Lightning Bolt, Counterspell...)"
+            placeholder="Rechercher en français ou anglais (ex: Éclair, Lightning Bolt...)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base min-h-[44px] px-4 py-3"
+            className="pl-10 pr-4 block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base min-h-[44px] py-3"
             autoFocus
           />
         </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Filter, MessageSquare, Globe, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,6 +11,7 @@ import { CreateQuestionModal } from '../components/questions/CreateQuestionModal
 
 export function QuestionsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -220,12 +222,12 @@ export function QuestionsPage() {
                 onClick={() => {
                   // Navigate to conversation or question detail
                   if (question.status !== 'waiting_for_judge') {
-                    // Try to find existing conversation
-                    window.location.href = `/conversation/${question.id}`
+                    // Navigate to existing conversation
+                    navigate(`/conversation/${question.id}`)
                   } else {
                     // For judges, allow taking the question
                     if (user?.profile?.role === 'judge') {
-                      window.location.href = `/conversation/${question.id}`
+                      navigate(`/conversation/${question.id}`)
                     }
                   }
                 }}

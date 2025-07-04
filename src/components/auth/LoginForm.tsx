@@ -27,9 +27,11 @@ export function LoginForm() {
     try {
       setLoading(true)
       setError('')
+      console.log('Login form submission:', data.email)
       await signIn(data.email, data.password)
       navigate('/')
     } catch (err: any) {
+      console.error('Login error:', err)
       setError(err.message || 'Une erreur est survenue')
     } finally {
       setLoading(false)

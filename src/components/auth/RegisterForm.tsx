@@ -32,9 +32,11 @@ export function RegisterForm() {
     try {
       setLoading(true)
       setError('')
+      console.log('Register form submission:', data.email, data.fullName)
       await signUp(data.email, data.password, data.fullName)
       navigate('/')
     } catch (err: any) {
+      console.error('Register error:', err)
       setError(err.message || 'Une erreur est survenue')
     } finally {
       setLoading(false)

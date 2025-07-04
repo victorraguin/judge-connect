@@ -5,8 +5,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import { Textarea } from '../ui/Textarea'
-import { Globe, Lock, Camera, Image as ImageIcon, X, AlertCircle } from 'lucide-react'
+import { Globe, Lock, Camera, Image as ImageIcon, X, AlertCircle, Search, Plus } from 'lucide-react'
+import { CardSearchModal } from '../cards/CardSearchModal'
 
 interface CreateQuestionModalProps {
   isOpen: boolean
@@ -20,6 +20,7 @@ interface QuestionFormData {
   category: string
   image_url?: string
   is_public: boolean
+  selected_cards?: any[]
 }
 
 const categories = [
@@ -40,6 +41,8 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [showCardSearch, setShowCardSearch] = useState(false)
+  const [selectedCards, setSelectedCards] = useState<any[]>([])
 
   const {
     register,
@@ -80,6 +83,14 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
     setValue('image_url', '')
   }
 
+  const addCard = (card: any) => {
+    setSelectedCards(prev => [...prev, card])
+  }
+
+  const removeCard = (cardId: string) => {
+    setSelectedCards(prev => prev.filter(card => card.id !== cardId))
+  }
+
   const onSubmit = async (data: QuestionFormData) => {
     if (!user) return
 
@@ -96,12 +107,15 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           category: data.category,
           image_url: data.image_url || null,
           is_public: data.is_public,
+        }, {
+          metadata: selectedCards.length > 0 ? { cards: selectedCards } : null
         })
 
       if (insertError) throw insertError
 
       reset()
       setImagePreview(null)
+      setSelectedCards([])
       onSuccess()
       onClose()
     } catch (err: any) {
@@ -114,6 +128,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
   const handleClose = () => {
     reset()
     setImagePreview(null)
+    setSelectedCards([])
     setError('')
     onClose()
   }
@@ -194,6 +209,59 @@ Exemple :
             </div>
             <p className="text-xs text-gray-500 mt-1">
               💡 Plus vous donnez de détails, plus la réponse sera précise et rapide
+            </p>
+          </div>
+
+          {/* Selected Cards */}
+          {selectedCards.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Cartes sélectionnées ({selectedCards.length})
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {selectedCards.map((card) => (
+                  <div key={card.id} className="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {card.image_uris?.small && (
+                          <img
+                            src={card.image_uris.small}
+                            alt={card.name}
+                            className="w-8 h-11 object-cover rounded border border-gray-500"
+                          />
+                        )}
+                        <div>
+                          <h4 className="font-medium text-white text-sm">{card.name}</h4>
+                          <p className="text-xs text-gray-400">{card.type_line}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCard(card.id)}
+                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Add Cards Button */}
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCardSearch(true)}
+              className="w-full"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Ajouter des cartes MTG
+            </Button>
+            <p className="text-xs text-gray-500 mt-1">
+              🃏 Ajoutez les cartes impliquées dans votre question pour plus de clarté
             </p>
           </div>
 
@@ -315,6 +383,12 @@ Exemple :
           </Button>
         </div>
       </form>
+
+      <CardSearchModal
+        isOpen={showCardSearch}
+        onClose={() => setShowCardSearch(false)}
+        onSelectCard={addCard}
+      />
     </Modal>
   )
 }

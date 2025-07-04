@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock, User, Tag, Globe, Lock, ThumbsUp, Eye } from 'lucide-react'
+import { Clock, User, Tag, Globe, Lock, ThumbsUp, Eye, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Question } from '../../types/database'
@@ -46,6 +46,7 @@ export function QuestionCard({ question, onClick, showActions = false }: Questio
         return status
     }
   }
+  const hasConversation = question.status !== 'waiting_for_judge'
 
   return (
     <div
@@ -97,6 +98,12 @@ export function QuestionCard({ question, onClick, showActions = false }: Questio
             <div className="flex items-center space-x-1">
               <ThumbsUp className="h-4 w-4" />
               <span>0</span>
+            </div>
+          )}
+          {hasConversation && (
+            <div className="flex items-center space-x-1 text-blue-400">
+              <MessageSquare className="h-4 w-4" />
+              <span className="text-xs">Chat</span>
             </div>
           )}
           <div className="flex items-center">

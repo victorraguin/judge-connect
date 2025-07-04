@@ -7,14 +7,16 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helperText?: string
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
-  label,
-  error,
-  helperText,
-  className,
-  id,
-  ...props
-}, ref) => {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>((inputProps, ref) => {
+  const {
+    label,
+    error,
+    helperText,
+    className,
+    id,
+    ...props
+  } = inputProps
+
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
 
   return (

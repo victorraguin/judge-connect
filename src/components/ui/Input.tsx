@@ -27,7 +27,7 @@ export function Input({
       <input
         id={inputId}
         className={clsx(
-          'block w-full rounded-md bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors',
+          'block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base transition-colors min-h-[44px] px-4 py-3',
           error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
           className
         )}

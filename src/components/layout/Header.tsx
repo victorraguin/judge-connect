@@ -42,17 +42,14 @@ export function Header() {
   }
 
   return (
-    <header className="bg-gray-900/95 backdrop-blur-sm shadow-lg border-b border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-slate-900/95 backdrop-blur-sm shadow-lg border-b border-slate-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 container-mobile">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center group">
-              <div className="relative">
-                <Sparkles className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                <div className="absolute inset-0 bg-blue-400 rounded-full opacity-20 group-hover:opacity-30 transition-opacity blur-sm"></div>
-              </div>
+              <Sparkles className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
               <div className="ml-3">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-white">
                   MTG Judge
                 </h1>
                 <p className="text-xs text-gray-400 -mt-1">Magic: The Gathering</p>
@@ -60,7 +57,7 @@ export function Header() {
             </Link>
           </div>
 
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden lg:flex space-x-8">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -86,7 +83,7 @@ export function Header() {
                   <Bell className="h-4 w-4" />
                   <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
                 </Button>
-                <div className="flex items-center space-x-3">
+                <div className="hidden sm:flex items-center space-x-3">
                   <div className="flex items-center space-x-2 bg-gray-800 rounded-lg px-3 py-2">
                     {getRoleIcon(user.profile?.role || 'user')}
                     <span className="text-sm text-gray-300">
@@ -102,9 +99,14 @@ export function Header() {
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
+                <div className="sm:hidden">
+                  <Button variant="ghost" size="sm" onClick={signOut}>
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
               </>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-col sm:flex-row gap-2 sm:gap-2">
                 <Link to="/login">
                   <Button variant="outline" size="sm">Connexion</Button>
                 </Link>

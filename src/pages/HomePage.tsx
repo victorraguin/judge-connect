@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MessageSquare, Users, Crown, Star, Plus, TrendingUp, Award, Zap } from 'lucide-react'
+import { MessageSquare, Users, Crown, Star, Plus, TrendingUp, Award, Zap, CheckCircle, Clock, Shield } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -68,31 +68,90 @@ export function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      <div className="px-4 py-12 sm:px-0">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-16 container-mobile">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="relative inline-block">
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-blue-600 bg-clip-text text-transparent mb-6">
+        <div className="text-center mb-20">
+          <div className="mb-8">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               MTG Judge
             </h1>
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg opacity-20 blur-xl animate-pulse-slow"></div>
+            <p className="text-xl sm:text-2xl text-blue-400 font-medium mb-8">
+              La plateforme de référence pour Magic: The Gathering
+            </p>
           </div>
-          <p className="mt-6 max-w-3xl mx-auto text-xl text-gray-300 leading-relaxed">
-            La plateforme de référence pour connecter les joueurs de <span className="text-blue-400 font-semibold">Magic: The Gathering</span> 
-            avec des juges certifiés. Obtenez des réponses expertes à vos questions de règles en temps réel.
+          <p className="max-w-4xl mx-auto text-lg sm:text-xl text-gray-300 leading-relaxed mb-12">
+            Connectez-vous instantanément avec des <span className="text-blue-400 font-semibold">juges certifiés</span> pour obtenir des réponses expertes à vos questions de règles Magic: The Gathering.
           </p>
-          <div className="mt-8 flex justify-center space-x-2">
-            <span className="mana-symbol mana-white">W</span>
-            <span className="mana-symbol mana-blue">U</span>
-            <span className="mana-symbol mana-black">B</span>
-            <span className="mana-symbol mana-red">R</span>
-            <span className="mana-symbol mana-green">G</span>
+          
+          {/* CTA Principal */}
+          {user ? (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button
+                onClick={() => setShowCreateQuestion(true)}
+                size="lg"
+                className="text-lg px-8 py-4 w-full sm:w-auto"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Poser une question
+              </Button>
+              <Link to="/questions">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                  Parcourir les questions
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link to="/register">
+                <Button size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                  Commencer gratuitement
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                  Se connecter
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Avantages clés */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+              <Zap className="h-8 w-8 text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Réponses Instantanées</h3>
+            <p className="text-gray-400">
+              Obtenez des réponses en temps réel de juges certifiés disponibles 24h/24.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+              <Shield className="h-8 w-8 text-green-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Juges Certifiés</h3>
+            <p className="text-gray-400">
+              Tous nos juges sont officiellement certifiés par Wizards of the Coast.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
+              <Award className="h-8 w-8 text-purple-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Système de Récompenses</h3>
+            <p className="text-gray-400">
+              Gagnez des points et échangez-les contre des récompenses exclusives.
+            </p>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-16">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-20">
           <div className="bg-gray-800/50 backdrop-blur-sm overflow-hidden shadow-xl rounded-xl border border-gray-700 card-hover">
             <div className="p-6">
               <div className="flex items-center">
@@ -182,89 +241,76 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Features Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-          <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-8 border border-gray-700 card-hover">
+        {/* Comment ça marche */}
+        <div className="mb-20">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-12">
+            Comment ça marche ?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
-                <Zap className="h-8 w-8 text-blue-400" />
+              <div className="mx-auto w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
+                1
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Réponses Instantanées</h3>
+              <h3 className="text-xl font-semibold text-white mb-3">Posez votre question</h3>
               <p className="text-gray-400">
-                Connectez-vous avec des juges certifiés en temps réel pour des réponses rapides et précises.
+                Décrivez votre situation de jeu avec tous les détails nécessaires.
               </p>
             </div>
-          </div>
-
-          <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-8 border border-gray-700 card-hover">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <Crown className="h-8 w-8 text-green-400" />
+              <div className="mx-auto w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
+                2
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Juges Certifiés</h3>
+              <h3 className="text-xl font-semibold text-white mb-3">Connectez-vous avec un juge</h3>
               <p className="text-gray-400">
-                Tous nos juges sont officiellement certifiés par Wizards of the Coast (L1, L2, L3).
+                Un juge certifié prend en charge votre question en temps réel.
               </p>
             </div>
-          </div>
-
-          <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-8 border border-gray-700 card-hover">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
-                <TrendingUp className="h-8 w-8 text-purple-400" />
+              <div className="mx-auto w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">
+                3
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Système de Points</h3>
+              <h3 className="text-xl font-semibold text-white mb-3">Obtenez votre réponse</h3>
               <p className="text-gray-400">
-                Gagnez des points en posant des questions et en aidant la communauté. Échangez-les contre des récompenses.
+                Recevez une réponse officielle et gagnez des points de récompense.
               </p>
             </div>
           </div>
         </div>
 
-        {/* CTA Section */}
-        {user ? (
-          <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Prêt à poser votre question ?
-              </h3>
-              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                Connectez-vous avec un juge expert et obtenez une réponse qualifiée à votre question sur Magic: The Gathering.
-              </p>
-              <Button
-                onClick={() => setShowCreateQuestion(true)}
-                size="lg"
-                className="inline-flex items-center"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Poser une question
-              </Button>
+        {/* Témoignages / Social Proof */}
+        <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-gray-700 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
+            Rejoignez des milliers de joueurs satisfaits
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+            <div>
+              <div className="text-3xl font-bold text-blue-400 mb-2">98%</div>
+              <div className="text-gray-300">Taux de satisfaction</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-green-400 mb-2">&lt; 2min</div>
+              <div className="text-gray-300">Temps de réponse moyen</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-purple-400 mb-2">24/7</div>
+              <div className="text-gray-300">Disponibilité</div>
             </div>
           </div>
-        ) : (
-          <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Rejoignez la communauté MTG Judge
-              </h3>
-              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                Créez un compte pour accéder à notre réseau d'experts et poser vos questions sur Magic: The Gathering.
-              </p>
-              <div className="space-x-4">
-                <Link to="/login">
-                  <Button variant="outline" size="lg">
-                    Se connecter
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button size="lg">
-                    S'inscrire gratuitement
-                  </Button>
-                </Link>
-              </div>
+          {!user && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link to="/register">
+                <Button size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                  Commencer maintenant
+                </Button>
+              </Link>
+              <Link to="/questions">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                  Voir les questions
+                </Button>
+              </Link>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <CreateQuestionModal
           isOpen={showCreateQuestion}

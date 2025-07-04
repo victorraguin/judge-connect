@@ -62,8 +62,8 @@ export const authService = {
 
     console.log('User profile query result:', { profile, profileError })
 
-    // If profile doesn't exist, create it
-    if (!profile && !profileError) {
+    // If profile doesn't exist, create it (but only if there's no error indicating it doesn't exist)
+    if (!profile && profileError?.code === 'PGRST116') {
       console.log('No profile found, creating one...')
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
@@ -78,6 +78,12 @@ export const authService = {
 
       if (createError) {
         console.error('Error creating profile:', createError)
+        // Return user without profile if creation fails
+        return {
+          id: user.id,
+          email: user.email!,
+          profile: undefined,
+        }
       } else {
         console.log('Profile created successfully:', newProfile)
         return {

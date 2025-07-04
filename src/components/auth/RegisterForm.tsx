@@ -34,6 +34,7 @@ export function RegisterForm() {
       setError('')
       console.log('Register form submission:', data.email, data.fullName)
       await signUp(data.email, data.password, data.fullName)
+      console.log('Register successful, navigating to home')
       navigate('/')
     } catch (err: any) {
       console.error('Register error:', err)

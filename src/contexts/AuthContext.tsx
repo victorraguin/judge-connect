@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       console.log('AuthContext signIn called')
-      await authService.signIn(email, password)
+      const result = await authService.signIn(email, password)
       console.log('SignIn result:', result)
       
       // Wait a bit for the auth state change to trigger
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       console.log('AuthContext signUp called')
-      await authService.signUp(email, password, fullName)
+      const result = await authService.signUp(email, password, fullName)
       console.log('SignUp result:', result)
       
       // Wait a bit for the auth state change to trigger

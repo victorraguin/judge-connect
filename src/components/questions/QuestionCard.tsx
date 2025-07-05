@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock, User, Tag, Globe, Lock, ThumbsUp, Eye, MessageSquare } from 'lucide-react'
+import { Clock, User, Tag, Globe, Lock, ThumbsUp, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Question } from '../../types/database'
@@ -104,7 +104,7 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
           {hasConversation && showChatIndicator && (
             <div className="flex items-center space-x-1 text-blue-400">
               <MessageSquare className="h-4 w-4" />
-              <span className="text-xs">Chat</span>
+              <span className="text-xs">Ouvrir</span>
             </div>
           )}
           <div className="flex items-center">

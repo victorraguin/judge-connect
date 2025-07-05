@@ -30,7 +30,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((inputProps,
         ref={ref}
         id={inputId}
         className={clsx(
-          'block w-full rounded-lg bg-gray-700 border-gray-500 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[44px] px-4 py-3',
+          'block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[44px] px-4 py-3',
           error && 'border-red-400 focus:border-red-400 focus:ring-red-400',
           className
         )}
@@ -40,7 +40,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((inputProps,
         <p className="text-sm text-red-400">{error}</p>
       )}
       {helperText && !error && (
-        <p className="text-sm text-gray-500">{helperText}</p>
+        <p className="text-sm text-gray-400">{helperText}</p>
       )}
     </div>
   )

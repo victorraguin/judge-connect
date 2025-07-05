@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MessageSquare, Crown, Star, Clock, TrendingUp, Camera, Image as ImageIcon, X } from 'lucide-react'
+import { Plus, MessageSquare, Crown, Star, Clock, TrendingUp } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Textarea } from '../components/ui/Textarea'
 import { QuestionCard } from '../components/questions/QuestionCard'
-import { useForm } from 'react-hook-form'
+import { CreateQuestionModal } from '../components/questions/CreateQuestionModal'
 import type { Question } from '../types/database'
 
 interface DashboardStats {
@@ -16,27 +14,6 @@ interface DashboardStats {
   completedQuestions: number
   totalPoints: number
 }
-
-interface QuestionFormData {
-  title: string
-  content: string
-  category: string
-  image_url?: string
-  is_public: boolean
-}
-
-const categories = [
-  'Règles générales',
-  'Interactions de cartes',
-  'Timing et priorité',
-  'Zones de jeu',
-  'Types de cartes',
-  'Mots-clés et capacités',
-  'Combat',
-  'Tournois et REL',
-  'Formats spécifiques',
-  'Autre',
-]
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -49,25 +26,7 @@ export function DashboardPage() {
   })
   const [recentQuestions, setRecentQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
-  const [showQuestionForm, setShowQuestionForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<QuestionFormData>({
-    defaultValues: {
-      is_public: false,
-    },
-  })
-
-  const isPublic = watch('is_public')
+  const [showCreateQuestion, setShowCreateQuestion] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -125,57 +84,6 @@ export function DashboardPage() {
       console.error('Error loading dashboard data:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // In a real app, you would upload to a service like Supabase Storage
-      // For now, we'll create a preview URL
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        setImagePreview(result)
-        setValue('image_url', result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const removeImage = () => {
-    setImagePreview(null)
-    setValue('image_url', '')
-  }
-
-  const onSubmit = async (data: QuestionFormData) => {
-    if (!user) return
-
-    try {
-      setSubmitting(true)
-      setError('')
-
-      const { error: insertError } = await supabase
-        .from('questions')
-        .insert({
-          user_id: user.id,
-          title: data.title,
-          content: data.content,
-          category: data.category,
-          image_url: data.image_url || null,
-          is_public: data.is_public,
-        })
-
-      if (insertError) throw insertError
-
-      reset()
-      setImagePreview(null)
-      setShowQuestionForm(false)
-      loadDashboardData()
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue')
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -258,12 +166,12 @@ export function DashboardPage() {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
-              onClick={() => setShowQuestionForm(!showQuestionForm)}
+              onClick={() => setShowCreateQuestion(true)}
               size="lg"
               className="flex-1 sm:flex-none"
             >
               <Plus className="h-5 w-5 mr-2" />
-              {showQuestionForm ? 'Annuler' : 'Nouvelle question'}
+              Nouvelle question
             </Button>
             <Button variant="outline" size="lg" className="flex-1 sm:flex-none">
               <MessageSquare className="h-5 w-5 mr-2" />
@@ -271,167 +179,6 @@ export function DashboardPage() {
             </Button>
           </div>
         </div>
-
-        {/* Question Form */}
-        {showQuestionForm && (
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-6">Poser une nouvelle question</h2>
-            
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {error && (
-                <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <Input
-                label="Titre de la question"
-                {...register('title', {
-                  required: 'Le titre est requis',
-                  maxLength: {
-                    value: 200,
-                    message: 'Le titre ne peut pas dépasser 200 caractères',
-                  },
-                })}
-                error={errors.title?.message}
-                placeholder="Ex: Interaction entre Counterspell et Split Second"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Catégorie
-                </label>
-                <select
-                  {...register('category', { required: 'La catégorie est requise' })}
-                  className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base min-h-[44px] px-4 py-3"
-                >
-                  <option value="">Sélectionnez une catégorie</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-                {errors.category && (
-                  <p className="mt-1 text-sm text-red-400">{errors.category.message}</p>
-                )}
-              </div>
-
-              <Textarea
-                label="Description détaillée"
-                rows={6}
-                {...register('content', {
-                  required: 'La description est requise',
-                  minLength: {
-                    value: 20,
-                    message: 'La description doit contenir au moins 20 caractères',
-                  },
-                })}
-                error={errors.content?.message}
-                helperText="Décrivez votre situation en détail : cartes impliquées, étapes du jeu, contexte..."
-                placeholder="Décrivez votre question avec le maximum de détails possible..."
-              />
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Image (optionnel)
-                </label>
-                
-                {!imagePreview ? (
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <label className="flex-1 cursor-pointer">
-                      <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
-                        <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400 mb-1">
-                          Cliquez pour sélectionner une image
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          JPG, PNG jusqu'à 10MB
-                        </p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    
-                    {/* Mobile Camera Button */}
-                    <div className="sm:hidden">
-                      <label className="cursor-pointer">
-                        <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
-                          <Camera className="h-6 w-6 text-gray-400 mx-auto mb-1" />
-                          <p className="text-xs text-gray-400">Appareil photo</p>
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg border border-gray-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                
-                <p className="text-xs text-gray-500 mt-2">
-                  {window.innerWidth < 768 
-                    ? "Utilisez l'appareil photo ou sélectionnez une image de votre galerie"
-                    : "Ajoutez une image pour illustrer votre question (état de jeu, cartes, etc.)"
-                  }
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="is_public"
-                  {...register('is_public')}
-                  className="h-4 w-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="is_public" className="text-sm text-gray-300">
-                  Rendre cette question publique (visible par la communauté)
-                </label>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowQuestionForm(false)}
-                  className="flex-1 sm:flex-none"
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  loading={submitting}
-                  className="flex-1 sm:flex-none"
-                >
-                  Publier la question
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
 
         {/* Recent Questions */}
         <div>
@@ -452,6 +199,7 @@ export function DashboardPage() {
                 Commencez par poser votre première question sur Magic: The Gathering
               </p>
               <Button onClick={() => setShowQuestionForm(true)}>
+              <Button onClick={() => setShowCreateQuestion(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Poser ma première question
               </Button>
@@ -473,6 +221,12 @@ export function DashboardPage() {
             </div>
           )}
         </div>
+
+        <CreateQuestionModal
+          isOpen={showCreateQuestion}
+          onClose={() => setShowCreateQuestion(false)}
+          onSuccess={loadDashboardData}
+        />
       </div>
     </div>
   )

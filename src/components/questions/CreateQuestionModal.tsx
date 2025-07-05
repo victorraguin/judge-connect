@@ -191,8 +191,8 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 },
               })}
               rows={6}
-              className="block w-full rounded-lg bg-gray-700 border-gray-500 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[120px] px-4 py-3 resize-none"
-              placeholder="Décrivez votre situation de jeu en détail : cartes impliquées, étape du tour, contexte..."
+              className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[120px] px-4 py-3 resize-none"
+              placeholder="Décrivez votre situation en détail..."
             />
             <div className="flex justify-between items-center mt-1">
               {errors.content && (
@@ -203,7 +203,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
               </p>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              💡 Plus vous donnez de détails, plus la réponse sera précise et rapide
+              💡 Plus de détails = réponse plus précise
             </p>
           </div>
 

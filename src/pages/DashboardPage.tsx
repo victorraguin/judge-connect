@@ -198,7 +198,6 @@ export function DashboardPage() {
               <p className="text-gray-400 mb-4">
                 Commencez par poser votre première question sur Magic: The Gathering
               </p>
-              <Button onClick={() => setShowQuestionForm(true)}>
               <Button onClick={() => setShowCreateQuestion(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Poser ma première question

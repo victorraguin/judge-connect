@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Sparkles, Bell, User, LogOut, Crown, Star, Settings } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../ui/Button'
+import { NotificationCenter } from '../notifications/NotificationCenter'
 
 export function Header() {
   const { user, signOut } = useAuth()
@@ -84,10 +85,9 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Button variant="ghost" size="sm" className="relative hidden sm:flex">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-                </Button>
+                <div className="hidden sm:block">
+                  <NotificationCenter />
+                </div>
                 <Link to="/profile">
                   <Button variant="ghost" size="sm" className="hidden sm:flex">
                     <Settings className="h-4 w-4" />
@@ -121,6 +121,9 @@ export function Header() {
                       <Settings className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <div className="sm:hidden">
+                    <NotificationCenter />
+                  </div>
                   <Button variant="ghost" size="sm" onClick={signOut}>
                     <LogOut className="h-4 w-4" />
                   </Button>

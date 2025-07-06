@@ -5,6 +5,7 @@ import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
+import { notificationService } from '../lib/notificationService'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { CardSearchModal } from '../components/cards/CardSearchModal'
@@ -271,6 +272,13 @@ export function ConversationPage() {
           message_type: 'system'
         })
 
+      // Send notification to user
+      await notificationService.notifyQuestionAssigned(
+        question.id,
+        question.user_id,
+        user.id
+      )
+
       // Load the full conversation data
       const { data: fullConversation } = await supabase
         .from('conversations')
@@ -426,6 +434,13 @@ export function ConversationPage() {
           message_type: 'system'
         })
 
+      // Send notification to user
+      await notificationService.notifyQuestionCompleted(
+        conversation.id,
+        conversation.user_id,
+        user.id
+      )
+
       // Update local state
       setConversation(prev => prev ? {
         ...prev,
@@ -470,6 +485,20 @@ export function ConversationPage() {
           reason: `Question résolue avec note ${rating}/5`,
           conversation_id: conversation.id
         })
+
+      // Send notification to judge about rating
+      await notificationService.notifyRatingReceived(
+        conversation.judge_id,
+        rating,
+        conversation.id
+      )
+
+      // Send notification about reward earned
+      await notificationService.notifyRewardEarned(
+        conversation.judge_id,
+        rating * 10,
+        `Question résolue avec note ${rating}/5`
+      )
 
       // Update judge stats
       const { data: judgeInfo } = await supabase

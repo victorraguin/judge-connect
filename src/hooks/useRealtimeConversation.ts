@@ -74,6 +74,15 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
             .from('messages')
             .update({ read_at: new Date().toISOString() })
             .eq('id', payload.new.id)
+
+          // Send notification to recipient about new message
+          const { notificationService } = await import('../lib/notificationService')
+          await notificationService.notifyNewMessage(
+            conversationId,
+            payload.new.sender_id,
+            user.id,
+            payload.new.content || 'Nouveau message'
+          )
         }
 
         // Play notification sound for new messages

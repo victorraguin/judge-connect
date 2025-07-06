@@ -739,12 +739,6 @@ export function ConversationPage() {
     )
   }
 
-  // Le reste du JSX pour la conversation sera dans la partie 5 si nécessaire
-  // (Les modales, les messages, l'input, etc.)
-
-// src/pages/ConversationPage.tsx - PARTIE 5/5 (JSX de la conversation)
-// À ajouter après la partie 4
-
   if (!conversation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">

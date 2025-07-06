@@ -220,15 +220,18 @@ export function QuestionsPage() {
                 key={question.id}
                 question={question}
                 onClick={() => {
-                  // Navigate to conversation or question detail
-                  if (question.status !== 'waiting_for_judge') {
-                    // Navigate to existing conversation
-                    navigate(`/conversation/${question.id}`)
-                  } else {
+                  // Always try to navigate to conversation for any question
+                  if (question.status === 'waiting_for_judge') {
                     // For judges, allow taking the question
                     if (user?.profile?.role === 'judge') {
                       navigate(`/conversation/${question.id}`)
+                    } else {
+                      // For regular users, show that question is waiting
+                      console.log('Question en attente d\'un juge')
                     }
+                  } else {
+                    // Navigate to existing conversation for any other status
+                    navigate(`/conversation/${question.id}`)
                   }
                 }}
               />

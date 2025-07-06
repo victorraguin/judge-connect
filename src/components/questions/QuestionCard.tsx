@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock, User, Tag, Globe, Lock, ThumbsUp, MessageSquare } from 'lucide-react'
+import { Clock, User, Tag, Globe, Lock, ThumbsUp, MessageSquare, ArrowRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Question } from '../../types/database'
@@ -51,7 +51,7 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
 
   return (
     <div
-      className={`bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6 transition-all duration-300 hover:border-blue-500/50 card-hover ${
+      className={`bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6 transition-all duration-300 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10 card-hover group ${
         onClick ? 'cursor-pointer' : ''
       }`}
       onClick={onClick}
@@ -59,11 +59,14 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-white">{question.title}</h3>
+            <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors">{question.title}</h3>
             {question.is_public ? (
               <Globe className="h-4 w-4 text-green-400" title="Question publique" />
             ) : (
               <Lock className="h-4 w-4 text-gray-400" title="Question privée" />
+            )}
+            {onClick && hasConversation && (
+              <ArrowRight className="h-4 w-4 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             )}
           </div>
           <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">{question.content}</p>
@@ -104,7 +107,7 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
           {hasConversation && showChatIndicator && (
             <div className="flex items-center space-x-1 text-blue-400">
               <MessageSquare className="h-4 w-4" />
-              <span className="text-xs">Ouvrir</span>
+              <span className="text-xs group-hover:font-medium transition-all">Ouvrir le chat</span>
             </div>
           )}
           <div className="flex items-center">

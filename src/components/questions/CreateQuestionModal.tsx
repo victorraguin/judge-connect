@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import { Globe, Lock, Camera, Image as ImageIcon, X, AlertCircle, Search, Plus } from 'lucide-react'
+import { Globe, Lock, Camera, Image as ImageIcon, X, AlertCircle, Search, Plus, Sparkles } from 'lucide-react'
 import { CardSearchModal } from '../cards/CardSearchModal'
 
 interface CreateQuestionModalProps {
@@ -134,37 +134,57 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Poser une question MTG" size="xl">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <Modal isOpen={isOpen} onClose={handleClose} title="" size="xl">
+      <div className="space-y-8">
+        {/* Custom Header */}
+        <div className="text-center pb-6 border-b border-gray-700">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full">
+              <Sparkles className="h-8 w-8 text-blue-400" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Poser une question MTG</h2>
+          <p className="text-gray-400">Obtenez une réponse d'expert de nos juges certifiés</p>
+        </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {error && (
-          <div className="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded-lg flex items-start">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl flex items-start backdrop-blur-sm">
             <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="space-y-4">
-          <Input
-            label="Titre de la question"
-            {...register('title', {
-              required: 'Le titre est requis',
-              maxLength: {
-                value: 200,
-                message: 'Le titre ne peut pas dépasser 200 caractères',
-              },
-            })}
-            error={errors.title?.message}
-            placeholder="Ex: Interaction entre Counterspell et Split Second"
-            className="text-base"
-          />
+        <div className="space-y-8">
+          {/* Title Input */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white mb-3">
+              Titre de votre question <span className="text-red-400">*</span>
+            </label>
+            <input
+              {...register('title', {
+                required: 'Le titre est requis',
+                maxLength: {
+                  value: 200,
+                  message: 'Le titre ne peut pas dépasser 200 caractères',
+                },
+              })}
+              placeholder="Ex: Interaction entre Counterspell et Split Second"
+              className="block w-full rounded-xl bg-gray-900/50 border-2 border-gray-600 text-white placeholder-gray-400 shadow-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-400/20 text-lg transition-all duration-200 min-h-[56px] px-6 py-4 backdrop-blur-sm"
+            />
+            {errors.title && (
+              <p className="text-sm text-red-400 mt-2">{errors.title.message}</p>
+            )}
+          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+          {/* Category Select */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white mb-3">
               Catégorie <span className="text-red-400">*</span>
             </label>
             <select
               {...register('category', { required: 'La catégorie est requise' })}
-              className="block w-full rounded-lg bg-gray-700 border-gray-500 text-white shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base min-h-[44px] px-4 py-3 transition-colors"
+              className="block w-full rounded-xl bg-gray-900/50 border-2 border-gray-600 text-white shadow-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-400/20 text-lg transition-all duration-200 min-h-[56px] px-6 py-4 backdrop-blur-sm"
             >
               <option value="">Sélectionnez une catégorie</option>
               {categories.map((category) => (
@@ -178,8 +198,9 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+          {/* Content Textarea */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white mb-3">
               Description détaillée <span className="text-red-400">*</span>
             </label>
             <textarea
@@ -191,7 +212,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 },
               })}
               rows={6}
-              className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 shadow-sm focus:border-blue-400 focus:ring-blue-400 text-base transition-colors min-h-[120px] px-4 py-3 resize-none"
+              className="block w-full rounded-xl bg-gray-900/50 border-2 border-gray-600 text-white placeholder-gray-400 shadow-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-400/20 text-lg transition-all duration-200 min-h-[140px] px-6 py-4 resize-none backdrop-blur-sm"
               placeholder="Décrivez votre situation en détail..."
             />
             <div className="flex justify-between items-center mt-1">
@@ -202,20 +223,21 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 {contentValue?.length || 0} caractères
               </p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-gray-400 mt-2 flex items-center">
+              <span className="mr-2">💡</span>
               💡 Plus de détails = réponse plus précise
             </p>
           </div>
 
           {/* Selected Cards */}
           {selectedCards.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-white mb-3">
                 Cartes sélectionnées ({selectedCards.length})
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {selectedCards.map((card) => (
-                  <div key={card.id} className="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                  <div key={card.id} className="bg-gray-900/30 rounded-xl p-4 border border-gray-600 backdrop-blur-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         {card.image_uris?.small && (
@@ -233,7 +255,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                       <button
                         type="button"
                         onClick={() => removeCard(card.id)}
-                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all duration-200"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -245,31 +267,32 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           )}
 
           {/* Add Cards Button */}
-          <div>
+          <div className="space-y-3">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={() => setShowCardSearch(true)}
-              className="w-full"
+              className="w-full py-4 text-lg rounded-xl"
             >
               <Search className="h-4 w-4 mr-2" />
               Ajouter des cartes MTG
             </Button>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-gray-400 mt-2 flex items-center">
+              <span className="mr-2">🃏</span>
               🃏 Ajoutez les cartes impliquées dans votre question pour plus de clarté
             </p>
           </div>
 
           {/* Image Upload Section */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white mb-3">
               Image (optionnel)
             </label>
             
             {!imagePreview ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="cursor-pointer group">
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-all duration-200 group-hover:bg-gray-800/30">
+                  <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-500/5 transition-all duration-300 group-hover:scale-105">
                     <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2 group-hover:text-blue-400 transition-colors" />
                     <p className="text-sm text-gray-400 mb-1 group-hover:text-gray-300">
                       Sélectionner une image
@@ -288,7 +311,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 
                 {/* Mobile Camera Option */}
                 <label className="cursor-pointer group sm:hidden">
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-all duration-200 group-hover:bg-gray-800/30">
+                  <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-500/5 transition-all duration-300 group-hover:scale-105">
                     <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2 group-hover:text-blue-400 transition-colors" />
                     <p className="text-sm text-gray-400 mb-1 group-hover:text-gray-300">
                       Prendre une photo
@@ -311,37 +334,38 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg border border-gray-600"
+                  className="w-full h-48 object-cover rounded-xl border-2 border-gray-600 shadow-lg"
                 />
                 <button
                   type="button"
                   onClick={removeImage}
-                  className="absolute top-2 right-2 p-2 bg-red-500/90 text-white rounded-full hover:bg-red-600 transition-colors backdrop-blur-sm"
+                  className="absolute top-3 right-3 p-2 bg-red-500/90 text-white rounded-full hover:bg-red-600 hover:scale-110 transition-all duration-200 backdrop-blur-sm shadow-lg"
                 >
                   <X className="h-4 w-4" />
                 </button>
-                <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                <div className="absolute bottom-3 left-3 bg-black/70 text-white text-sm px-3 py-2 rounded-lg backdrop-blur-sm">
                   Image ajoutée
                 </div>
               </div>
             )}
             
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-sm text-gray-400 mt-2 flex items-center">
+              <span className="mr-2">📸</span>
               📸 Ajoutez une image pour illustrer votre question (état de jeu, cartes spécifiques, etc.)
             </p>
           </div>
 
           {/* Visibility Toggle */}
-          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
+          <div className="bg-gradient-to-r from-gray-800/30 to-gray-700/30 rounded-xl p-6 border border-gray-600 backdrop-blur-sm">
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
                 id="is_public"
                 {...register('is_public')}
-                className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 mt-1"
+                className="h-5 w-5 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2 mt-1"
               />
               <div className="flex-1">
-                <label htmlFor="is_public" className="flex items-center text-sm font-medium text-gray-200 cursor-pointer">
+                <label htmlFor="is_public" className="flex items-center text-base font-semibold text-white cursor-pointer">
                   {isPublic ? (
                     <Globe className="h-4 w-4 mr-2 text-green-400" />
                   ) : (
@@ -349,7 +373,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                   )}
                   Rendre cette question publique
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-400 mt-2">
                   {isPublic 
                     ? "✅ Votre question sera visible par tous et pourra aider la communauté"
                     : "🔒 Seuls vous et le juge assigné pourrez voir cette question"
@@ -360,24 +384,25 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-700">
+        <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-700">
           <Button 
             type="button" 
             variant="outline" 
             onClick={handleClose}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none py-4 text-lg rounded-xl"
           >
             Annuler
           </Button>
           <Button 
             type="submit" 
             loading={loading}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none py-4 text-lg rounded-xl"
           >
             {loading ? 'Publication...' : 'Publier la question'}
           </Button>
         </div>
       </form>
+      </div>
 
       <CardSearchModal
         isOpen={showCardSearch}

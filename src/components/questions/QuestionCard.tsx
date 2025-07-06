@@ -32,17 +32,17 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'waiting_for_judge':
-        return 'En attente de juge'
+        return '🕐 En attente de juge'
       case 'assigned':
-        return 'Assignée'
+        return '⚖️ Juge assigné'
       case 'in_progress':
-        return 'En cours'
+        return '💬 En cours de traitement'
       case 'completed':
-        return 'Résolue'
+        return '✅ Résolue'
       case 'disputed':
-        return 'En dispute'
+        return '⚠️ En dispute'
       case 'resolved':
-        return 'Résolue'
+        return '✅ Résolue'
       default:
         return status
     }
@@ -107,7 +107,15 @@ export function QuestionCard({ question, onClick, showActions = false, showChatI
           {hasConversation && showChatIndicator && (
             <div className="flex items-center space-x-1 text-blue-400">
               <MessageSquare className="h-4 w-4" />
-              <span className="text-xs group-hover:font-medium transition-all">Ouvrir le chat</span>
+              <span className="text-xs group-hover:font-medium transition-all">
+                {question.status === 'waiting_for_judge' ? 'Voir la question' : 'Ouvrir le chat'}
+              </span>
+            </div>
+          )}
+          {!hasConversation && showChatIndicator && question.status === 'waiting_for_judge' && (
+            <div className="flex items-center space-x-1 text-yellow-400">
+              <Clock className="h-4 w-4" />
+              <span className="text-xs">En attente</span>
             </div>
           )}
           <div className="flex items-center">

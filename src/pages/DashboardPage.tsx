@@ -132,7 +132,7 @@ export function DashboardPage() {
               </div>
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm text-gray-400">En attente</p>
-                <p className="text-lg sm:text-2xl font-bold text-white">{stats.pendingQuestions}</p>
+                <p className="text-lg sm:text-2xl font-bold text-yellow-400">{stats.pendingQuestions}</p>
               </div>
             </div>
           </div>
@@ -144,7 +144,7 @@ export function DashboardPage() {
               </div>
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm text-gray-400">Résolues</p>
-                <p className="text-lg sm:text-2xl font-bold text-white">{stats.completedQuestions}</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-400">{stats.completedQuestions}</p>
               </div>
             </div>
           </div>
@@ -210,12 +210,12 @@ export function DashboardPage() {
                   key={question.id}
                   question={question}
                   onClick={() => {
-                    // Always try to navigate to conversation
+                    // Navigate to conversation for all questions
                     if (question.status === 'waiting_for_judge') {
-                      // Question waiting for judge - could show a message or navigate anyway
-                      console.log('Question en attente d\'un juge')
-                    } else {
-                      // Navigate to existing conversation
+                      // For waiting questions, show the question view
+                      navigate(`/conversation/${question.id}`)
+                    } else if (question.status === 'assigned' || question.status === 'in_progress' || question.status === 'completed') {
+                      // For questions with conversations, go to conversation
                       navigate(`/conversation/${question.id}`)
                     }
                   }}

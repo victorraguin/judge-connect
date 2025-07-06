@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock, AlertTriangle } from 'lucide-react'
+import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock, AlertTriangle, Eye, MessageSquare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -96,7 +96,7 @@ export function ConversationPage() {
           messages: messagesData || []
         })
 
-        // Mark messages as read
+        // Mark messages as read for the current user
         if (messagesData?.length) {
           await supabase
             .from('messages')
@@ -390,7 +390,7 @@ export function ConversationPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-300">Chargement...</p>
+          <p className="text-gray-300">🔄 Chargement...</p>
         </div>
       </div>
     )
@@ -400,6 +400,7 @@ export function ConversationPage() {
   if (question && !conversation) {
     const isJudge = user?.profile?.role === 'judge'
     const canTakeQuestion = isJudge && question.status === 'waiting_for_judge'
+    const isOwner = user?.id === question.user_id
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
@@ -420,7 +421,7 @@ export function ConversationPage() {
                     {question.category}
                   </Badge>
                   <Badge variant="warning" size="sm">
-                    En attente de juge
+                    🕐 En attente de juge
                   </Badge>
                 </div>
               </div>
@@ -440,7 +441,10 @@ export function ConversationPage() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
               <div className="mb-4">
-                <h2 className="text-xl font-semibold text-white mb-3">Question :</h2>
+                <h2 className="text-xl font-semibold text-white mb-3 flex items-center">
+                  <span className="mr-2">📋</span>
+                  Question complète :
+                </h2>
                 <p className="text-gray-300 leading-relaxed">{question.content}</p>
               </div>
               
@@ -456,7 +460,7 @@ export function ConversationPage() {
 
               <div className="flex items-center justify-between text-sm text-gray-400 pt-4 border-t border-gray-700">
                 <span>
-                  Posée {formatDistanceToNow(new Date(question.created_at), {
+                  📅 Posée {formatDistanceToNow(new Date(question.created_at), {
                     addSuffix: true,
                     locale: fr
                   })}
@@ -464,7 +468,7 @@ export function ConversationPage() {
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4" />
                   <span>
-                    Timeout dans {formatDistanceToNow(new Date(question.timeout_at), {
+                    ⏰ Timeout dans {formatDistanceToNow(new Date(question.timeout_at), {
                       locale: fr
                     })}
                   </span>
@@ -472,15 +476,39 @@ export function ConversationPage() {
               </div>
             </div>
 
-            {!canTakeQuestion && (
+            {/* Status Messages */}
+            {isOwner && (
+              <div className="mt-6 bg-blue-900/20 border border-blue-700 rounded-xl p-4">
+                <div className="flex items-center">
+                  <Eye className="h-5 w-5 text-blue-400 mr-2" />
+                  <span className="text-blue-300">
+                    🎯 Votre question est en attente d'un juge. Vous serez notifié dès qu'un juge la prendra en charge !
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {!canTakeQuestion && !isOwner && (
               <div className="mt-6 bg-yellow-900/20 border border-yellow-700 rounded-xl p-4">
                 <div className="flex items-center">
                   <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
                   <span className="text-yellow-300">
                     {isJudge 
-                      ? "Cette question a déjà été assignée à un autre juge"
-                      : "Vous ne pouvez pas prendre cette question"
+                      ? "⚖️ Cette question a déjà été assignée à un autre juge"
+                      : "👀 Vous pouvez voir cette question publique mais ne pouvez pas la prendre"
                     }
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Public Question Notice */}
+            {question.is_public && !isOwner && !isJudge && (
+              <div className="mt-6 bg-green-900/20 border border-green-700 rounded-xl p-4">
+                <div className="flex items-center">
+                  <MessageSquare className="h-5 w-5 text-green-400 mr-2" />
+                  <span className="text-green-300">
+                    🌍 Question publique - Vous pouvez voir la discussion mais pas y participer
                   </span>
                 </div>
               </div>
@@ -526,7 +554,7 @@ export function ConversationPage() {
                     </li>
                     <li className="flex items-start">
                       <span className="mr-2 text-purple-400">🏆</span>
-                      <span>Vous gagnerez des points selon votre performance</span>
+                      <span>Vous gagnerez des points selon votre évaluation</span>
                     </li>
                   </ul>
                 </div>
@@ -563,9 +591,9 @@ export function ConversationPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-300">Conversation non trouvée</p>
+          <p className="text-gray-300">❌ Conversation non trouvée</p>
           <Button onClick={() => navigate('/questions')} className="mt-4">
-            Retour aux questions
+            🔙 Retour aux questions
           </Button>
         </div>
       </div>
@@ -575,6 +603,7 @@ export function ConversationPage() {
   const isJudge = user?.id === conversation.judge_id
   const isUser = user?.id === conversation.user_id
   const canComplete = isJudge && conversation.status === 'active'
+  const canViewOnly = conversation.question.is_public && !isJudge && !isUser
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
@@ -595,7 +624,13 @@ export function ConversationPage() {
                   {conversation.question.category}
                 </Badge>
                 {conversation.status === 'active' && (
-                  <Badge variant="success" size="sm">En cours</Badge>
+                  <Badge variant="success" size="sm">💬 En cours</Badge>
+                )}
+                {conversation.status === 'ended' && (
+                  <Badge variant="default" size="sm">✅ Terminée</Badge>
+                )}
+                {canViewOnly && (
+                  <Badge variant="warning" size="sm">👀 Lecture seule</Badge>
                 )}
               </div>
             </div>
@@ -605,7 +640,7 @@ export function ConversationPage() {
             {canComplete && (
               <Button onClick={completeConversation} variant="success" size="sm">
                 <CheckCircle className="h-4 w-4 mr-1" />
-                Marquer comme résolu
+                ✅ Marquer comme résolu
               </Button>
             )}
           </div>
@@ -616,7 +651,10 @@ export function ConversationPage() {
       <div className="bg-gray-800/30 border-b border-gray-700 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-gray-800/50 rounded-lg p-4">
-            <h3 className="font-medium text-white mb-2">Question originale :</h3>
+            <h3 className="font-medium text-white mb-2 flex items-center">
+              <span className="mr-2">📋</span>
+              Question originale :
+            </h3>
             <p className="text-gray-300 mb-3">{conversation.question.content}</p>
             {conversation.question.image_url && (
               <img
@@ -627,7 +665,7 @@ export function ConversationPage() {
             )}
             <div className="flex items-center justify-between mt-3 text-sm text-gray-400">
               <span>
-                Posée par {conversation.question.user.full_name} • {' '}
+                📅 Posée par {conversation.question.user.full_name} • {' '}
                 {formatDistanceToNow(new Date(conversation.question.created_at), {
                   addSuffix: true,
                   locale: fr
@@ -638,23 +676,47 @@ export function ConversationPage() {
         </div>
       </div>
 
+      {/* View-only notice for public questions */}
+      {canViewOnly && (
+        <div className="bg-blue-900/20 border-b border-blue-700 p-3">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-center text-blue-300 text-sm">
+              <Eye className="h-4 w-4 mr-2" />
+              🌍 Vous consultez une conversation publique - Vous ne pouvez pas envoyer de messages
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto space-y-4">
-          {conversation.messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isOwn={message.sender_id === user?.id}
-              isJudge={message.sender_id === conversation.judge_id}
-            />
-          ))}
+          {conversation.messages.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">
+                {isJudge 
+                  ? "💬 Conversation créée ! Commencez par saluer le joueur et analyser sa question."
+                  : "🎯 Un juge a pris votre question ! Il va bientôt vous répondre."
+                }
+              </p>
+            </div>
+          ) : (
+            conversation.messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.sender_id === user?.id}
+                isJudge={message.sender_id === conversation.judge_id}
+              />
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Message Input */}
-      {conversation.status === 'active' && (
+      {conversation.status === 'active' && !canViewOnly && (
         <div className="bg-gray-800/50 backdrop-blur-sm border-t border-gray-700 p-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-3">
@@ -666,14 +728,14 @@ export function ConversationPage() {
                     onClick={() => setShowCardSearch(true)}
                   >
                     <Search className="h-4 w-4 mr-1" />
-                    Ajouter une carte
+                    🃏 Ajouter une carte
                   </Button>
                 </div>
                 <div className="flex items-end space-x-2">
                   <textarea
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="Tapez votre message..."
+                    placeholder="💬 Tapez votre message..."
                     className="flex-1 rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 resize-none min-h-[44px] max-h-32 px-4 py-3"
                     rows={1}
                     onKeyDown={(e) => {
@@ -703,13 +765,14 @@ export function ConversationPage() {
           <div className="flex min-h-screen items-center justify-center p-4">
             <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" />
             <div className="relative bg-gray-800 rounded-lg shadow-2xl w-full max-w-md border border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <span className="mr-2">⭐</span>
                 Évaluez votre expérience
               </h3>
               
               <div className="mb-4">
                 <p className="text-gray-300 mb-3">
-                  Comment évaluez-vous la réponse du juge ?
+                  🎯 Comment évaluez-vous la réponse du juge ?
                 </p>
                 <div className="flex justify-center space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -729,7 +792,7 @@ export function ConversationPage() {
               <textarea
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                placeholder="Commentaire optionnel..."
+                placeholder="💭 Commentaire optionnel..."
                 className="w-full rounded-lg bg-gray-700 border-gray-600 text-white placeholder-gray-400 mb-4"
                 rows={3}
               />

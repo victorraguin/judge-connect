@@ -35,6 +35,7 @@ export function ConversationPage() {
   const [takingQuestion, setTakingQuestion] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [userProfiles, setUserProfiles] = useState<{ [key: string]: Profile }>({})
+  const [actualConversationId, setActualConversationId] = useState<string | null>(null)
 
   // Use realtime conversation hook
   const {
@@ -46,7 +47,7 @@ export function ConversationPage() {
     sendTypingIndicator,
     loadConversation
   } = useRealtimeConversation({ 
-    conversationId: id || null 
+    conversationId: actualConversationId
   })
 
   // Effects
@@ -148,9 +149,8 @@ export function ConversationPage() {
       }
 
       if (conversationData) {
-        // Conversation exists, it will be loaded by the realtime hook
-        // Just trigger the load
-        await loadConversation()
+        // Conversation exists, set the actual conversation ID
+        setActualConversationId(conversationData.id)
       } else {
         // No conversation found, try to load question
         const { data: questionData, error: questionError } = await supabase

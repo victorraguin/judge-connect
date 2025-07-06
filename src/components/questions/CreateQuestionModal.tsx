@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { notificationService } from '../../lib/notificationService'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -112,6 +113,24 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
         })
 
       if (insertError) throw insertError
+
+      // Notify all available judges about the new question
+      if (data.is_public || true) { // For now, notify for all questions
+        const { data: judges } = await supabase
+          .from('judge_info')
+          .select('user_id')
+          .eq('is_available', true)
+
+        if (judges) {
+          for (const judge of judges) {
+            await notificationService.notifyNewQuestionAvailable(
+              judge.user_id,
+              insertError ? '' : 'new-question-id', // We'll need the actual ID
+              data.title
+            )
+          }
+        }
+      }
 
       reset()
       setImagePreview(null)

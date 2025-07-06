@@ -315,12 +315,16 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
       console.log('✅ Message sent successfully:', data.id)
 
       // Update conversation last message time
-      await supabase
+      const { error: updateError } = await supabase
         .from('conversations')
         .update({ 
           last_message_at: new Date().toISOString()
         })
         .eq('id', conversationId)
+
+      if (updateError) {
+        console.error('Error updating conversation:', updateError)
+      }
 
       // Stop typing indicator
       if (presenceRef.current) {
@@ -332,14 +336,7 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
       }
 
       // ✅ CORRECTION 7 : Ajouter immédiatement le message localement pour un feedback immédiat
-      setMessages(prev => {
-        const exists = prev.find(m => m.id === data.id)
-        if (exists) return prev
-        
-        return [...prev, data].sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        )
-      })
+      // Don't add locally here - let the realtime subscription handle it to avoid duplicates
 
     } catch (error) {
       console.error('❌ Error sending message:', error)

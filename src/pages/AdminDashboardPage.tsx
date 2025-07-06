@@ -115,105 +115,109 @@ export function AdminDashboardPage() {
     }
   }
 
-  const loadStats = async () => {
-    try {
-      // Total users
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
+const loadStats = async () => {
+  try {
+    // Total users
+    const { count: totalUsers } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
 
-      // Total judges
-      const { count: totalJudges } = await supabase
-        .from('judge_info')
-        .select('*', { count: 'exact', head: true })
+    // Total judges
+    const { count: totalJudges } = await supabase
+      .from('judge_info')
+      .select('*', { count: 'exact', head: true })
 
-      // Active judges
-      const { count: activeJudges } = await supabase
-        .from('judge_info')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_available', true)
+    // Active judges
+    const { count: activeJudges } = await supabase
+      .from('judge_info')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_available', true)
 
-      // Questions stats
-      const { count: totalQuestions } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
+    // Questions stats - mise à jour pour les nouveaux statuts
+    const { count: totalQuestions } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
 
-      const { count: pendingQuestions } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['waiting_for_judge', 'assigned'])
+    const { count: pendingQuestions } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['waiting_for_judge', 'assigned', 'in_progress'])
 
-      const { count: completedQuestions } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed')
+    const { count: completedQuestions } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
 
-      const { count: disputedQuestions } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'disputed')
+    const { count: disputedQuestions } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'disputed')
 
-      // Conversations stats
-      const { count: totalConversations } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
+    // Conversations stats
+    const { count: totalConversations } = await supabase
+      .from('conversations')
+      .select('*', { count: 'exact', head: true })
 
-      const { count: activeConversations } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
+    const { count: activeConversations } = await supabase
+      .from('conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
 
-      // Average rating
-      const { data: ratingsData } = await supabase
-        .from('ratings')
-        .select('rating')
+    // Average rating
+    const { data: ratingsData } = await supabase
+      .from('ratings')
+      .select('rating')
 
-      const averageRating = ratingsData?.length
-        ? ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length
-        : 0
+    const averageRating = ratingsData?.length
+      ? ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length
+      : 0
 
-      // Average response time calculation
-      const { data: conversationsData } = await supabase
-        .from('conversations')
-        .select('started_at, ended_at')
-        .not('ended_at', 'is', null)
+    // Average response time calculation - amélioré
+    const { data: conversationsData } = await supabase
+      .from('conversations')
+      .select('started_at, ended_at, question:questions!conversations_question_id_fkey(assigned_at)')
+      .not('ended_at', 'is', null)
 
-      let averageResponseTime = '0 min'
-      if (conversationsData?.length) {
-        const totalTime = conversationsData.reduce((sum, conv) => {
-          const start = new Date(conv.started_at).getTime()
-          const end = new Date(conv.ended_at!).getTime()
+    let averageResponseTime = '0 min'
+    if (conversationsData?.length) {
+      const totalTime = conversationsData.reduce((sum, conv) => {
+        if (conv.question?.assigned_at && conv.ended_at) {
+          const start = new Date(conv.question.assigned_at).getTime()
+          const end = new Date(conv.ended_at).getTime()
           return sum + (end - start)
-        }, 0)
-        const avgMinutes = Math.round(totalTime / conversationsData.length / 60000)
-        averageResponseTime = `${avgMinutes} min`
-      }
-
-      // Total points
-      const { data: rewardsData } = await supabase
-        .from('rewards')
-        .select('points_earned')
-
-      const totalPoints = rewardsData?.reduce((sum, r) => sum + r.points_earned, 0) || 0
-
-      setStats({
-        totalUsers: totalUsers || 0,
-        totalJudges: totalJudges || 0,
-        activeJudges: activeJudges || 0,
-        totalQuestions: totalQuestions || 0,
-        pendingQuestions: pendingQuestions || 0,
-        completedQuestions: completedQuestions || 0,
-        disputedQuestions: disputedQuestions || 0,
-        averageRating: Math.round(averageRating * 10) / 10,
-        averageResponseTime,
-        totalPoints,
-        totalConversations: totalConversations || 0,
-        activeConversations: activeConversations || 0,
-      })
-    } catch (error) {
-      console.error('Error loading stats:', error)
+        }
+        return sum
+      }, 0)
+      const avgMinutes = Math.round(totalTime / conversationsData.length / 60000)
+      averageResponseTime = `${avgMinutes} min`
     }
+
+    // Total points
+    const { data: rewardsData } = await supabase
+      .from('rewards')
+      .select('points_earned')
+
+    const totalPoints = rewardsData?.reduce((sum, r) => sum + r.points_earned, 0) || 0
+
+    setStats({
+      totalUsers: totalUsers || 0,
+      totalJudges: totalJudges || 0,
+      activeJudges: activeJudges || 0,
+      totalQuestions: totalQuestions || 0,
+      pendingQuestions: pendingQuestions || 0,
+      completedQuestions: completedQuestions || 0,
+      disputedQuestions: disputedQuestions || 0,
+      averageRating: Math.round(averageRating * 10) / 10,
+      averageResponseTime,
+      totalPoints,
+      totalConversations: totalConversations || 0,
+      activeConversations: activeConversations || 0,
+    })
+  } catch (error) {
+    console.error('Error loading stats:', error)
   }
+}
+
 
   const loadTopJudges = async () => {
     try {

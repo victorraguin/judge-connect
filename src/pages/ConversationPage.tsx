@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus } from 'lucide-react'
+import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock, AlertTriangle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -24,6 +24,7 @@ export function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
   const [conversation, setConversation] = useState<ConversationWithDetails | null>(null)
+  const [question, setQuestion] = useState<Question & { user: Profile } | null>(null)
   const [loading, setLoading] = useState(true)
   const [messageText, setMessageText] = useState('')
   const [sending, setSending] = useState(false)
@@ -32,23 +33,31 @@ export function ConversationPage() {
   const [feedback, setFeedback] = useState('')
   const [showRating, setShowRating] = useState(false)
   const [showTakeQuestion, setShowTakeQuestion] = useState(false)
+  const [takingQuestion, setTakingQuestion] = useState(false)
 
   useEffect(() => {
     if (id) {
-      loadConversation()
-      subscribeToMessages()
+      loadQuestionOrConversation()
     }
   }, [id])
 
   useEffect(() => {
-    scrollToBottom()
+    if (conversation?.messages) {
+      scrollToBottom()
+    }
   }, [conversation?.messages])
+
+  useEffect(() => {
+    if (conversation) {
+      subscribeToMessages()
+    }
+  }, [conversation?.id])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const loadConversation = async () => {
+  const loadQuestionOrConversation = async () => {
     if (!id) return
 
     try {
@@ -69,8 +78,35 @@ export function ConversationPage() {
         .or(`id.eq.${id},question_id.eq.${id}`)
         .single()
 
-      // If no conversation found, try to find by question ID and create one
-      if (convError && convError.code === 'PGRST116') {
+      if (conversationData) {
+        // Load messages for existing conversation
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('messages')
+          .select(`
+            *,
+            sender:profiles!messages_sender_id_fkey(*)
+          `)
+          .eq('conversation_id', conversationData.id)
+          .order('created_at', { ascending: true })
+
+        if (messagesError) throw messagesError
+
+        setConversation({
+          ...conversationData,
+          messages: messagesData || []
+        })
+
+        // Mark messages as read
+        if (messagesData?.length) {
+          await supabase
+            .from('messages')
+            .update({ read_at: new Date().toISOString() })
+            .eq('conversation_id', conversationData.id)
+            .neq('sender_id', user?.id)
+            .is('read_at', null)
+        }
+      } else {
+        // No conversation found, try to load question
         const { data: questionData, error: questionError } = await supabase
           .from('questions')
           .select(`
@@ -94,96 +130,16 @@ export function ConversationPage() {
           return
         }
 
-        // If it's a judge taking the question, create conversation and assign
+        setQuestion(questionData)
+
+        // If it's a judge viewing a waiting question, show take question modal
         if (user?.profile?.role === 'judge' && questionData.status === 'waiting_for_judge') {
-          // Update question status and assign judge
-          await supabase
-            .from('questions')
-            .update({
-              status: 'assigned',
-              assigned_judge_id: user.id,
-              assigned_at: new Date().toISOString()
-            })
-            .eq('id', questionData.id)
-
-          // Create conversation
-          const { data: newConversation, error: createError } = await supabase
-            .from('conversations')
-            .insert({
-              question_id: questionData.id,
-              user_id: questionData.user_id,
-              judge_id: user.id,
-              status: 'active'
-            })
-            .select()
-            .single()
-
-          if (createError) throw createError
-
-          // Send system message
-          await supabase
-            .from('messages')
-            .insert({
-              conversation_id: newConversation.id,
-              sender_id: user.id,
-              content: `Bonjour ! Je suis ${user.profile?.full_name || 'votre juge'} et je vais vous aider avec votre question. N'hésitez pas à me donner plus de détails si nécessaire.`,
-              message_type: 'system'
-            })
-
-          // Reload conversation
-          const { data: updatedConversation } = await supabase
-            .from('conversations')
-            .select(`
-              *,
-              question:questions!conversations_question_id_fkey(
-                *,
-                user:profiles!questions_user_id_fkey(*)
-              ),
-              user:profiles!conversations_user_id_fkey(*),
-              judge:profiles!conversations_judge_id_fkey(*)
-            `)
-            .eq('id', newConversation.id)
-            .single()
-
-          conversationData = updatedConversation
-        } else {
-          // Just viewing the question, redirect to questions page
-          navigate('/questions')
-          return
+          setShowTakeQuestion(true)
         }
       }
 
-      if (!conversationData) throw new Error('Conversation not found')
-
-      // Load messages
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey(*)
-        `)
-        .eq('conversation_id', conversationData.id)
-        .order('created_at', { ascending: true })
-
-      if (messagesError) throw messagesError
-
-      setConversation({
-        ...conversationData,
-        messages: messagesData || []
-      })
-
-      // Mark messages as read
-      if (messagesData?.length) {
-        await supabase
-          .from('messages')
-          .update({ read_at: new Date().toISOString() })
-          .eq('conversation_id', conversationData.id)
-          .neq('sender_id', user?.id)
-          .is('read_at', null)
-      }
-
     } catch (error) {
-      console.error('Error loading conversation:', error)
+      console.error('Error loading question/conversation:', error)
       navigate('/questions')
     } finally {
       setLoading(false)
@@ -191,15 +147,15 @@ export function ConversationPage() {
   }
 
   const subscribeToMessages = () => {
-    if (!id) return
+    if (!conversation?.id) return
 
     const subscription = supabase
-      .channel(`conversation-${id}`)
+      .channel(`conversation-${conversation.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `conversation_id=eq.${id}`
+        filter: `conversation_id=eq.${conversation.id}`
       }, async (payload) => {
         // Load sender info
         const { data: sender } = await supabase
@@ -225,6 +181,69 @@ export function ConversationPage() {
     }
   }
 
+  const takeQuestion = async () => {
+    if (!question || !user || user.profile?.role !== 'judge') return
+
+    try {
+      setTakingQuestion(true)
+
+      // Update question status and assign judge
+      const { error: updateError } = await supabase
+        .from('questions')
+        .update({
+          status: 'assigned',
+          assigned_judge_id: user.id,
+          assigned_at: new Date().toISOString()
+        })
+        .eq('id', question.id)
+
+      if (updateError) throw updateError
+
+      // Create conversation
+      const { data: newConversation, error: createError } = await supabase
+        .from('conversations')
+        .insert({
+          question_id: question.id,
+          user_id: question.user_id,
+          judge_id: user.id,
+          status: 'active'
+        })
+        .select()
+        .single()
+
+      if (createError) throw createError
+
+      // Load the full conversation data
+      const { data: fullConversation } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          question:questions!conversations_question_id_fkey(
+            *,
+            user:profiles!questions_user_id_fkey(*)
+          ),
+          user:profiles!conversations_user_id_fkey(*),
+          judge:profiles!conversations_judge_id_fkey(*)
+        `)
+        .eq('id', newConversation.id)
+        .single()
+
+      if (fullConversation) {
+        setConversation({
+          ...fullConversation,
+          messages: []
+        })
+        setQuestion(null)
+        setShowTakeQuestion(false)
+      }
+
+    } catch (error) {
+      console.error('Error taking question:', error)
+    } finally {
+      setTakingQuestion(false)
+    }
+  }
+
   const sendMessage = async () => {
     if (!messageText.trim() || !conversation || !user) return
 
@@ -242,11 +261,21 @@ export function ConversationPage() {
 
       if (error) throw error
 
-      // Update conversation last message time
+      // Update conversation last message time and status
       await supabase
         .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
+        .update({ 
+          last_message_at: new Date().toISOString()
+        })
         .eq('id', conversation.id)
+
+      // Update question status to in_progress if it's the first message
+      if (conversation.question.status === 'assigned') {
+        await supabase
+          .from('questions')
+          .update({ status: 'in_progress' })
+          .eq('id', conversation.question.id)
+      }
 
       setMessageText('')
     } catch (error) {
@@ -361,8 +390,171 @@ export function ConversationPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-300">Chargement de la conversation...</p>
+          <p className="text-gray-300">Chargement...</p>
         </div>
+      </div>
+    )
+  }
+
+  // Show question view for judges who haven't taken the question yet
+  if (question && !conversation) {
+    const isJudge = user?.profile?.role === 'judge'
+    const canTakeQuestion = isJudge && question.status === 'waiting_for_judge'
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+        {/* Header */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 p-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => navigate('/questions')}>
+                <X className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold text-white">
+                  {question.title}
+                </h1>
+                <div className="flex items-center space-x-2 text-sm text-gray-400">
+                  <span>par {question.user.full_name || question.user.email}</span>
+                  <Badge variant="info" size="sm">
+                    {question.category}
+                  </Badge>
+                  <Badge variant="warning" size="sm">
+                    En attente de juge
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            
+            {canTakeQuestion && (
+              <Button onClick={() => setShowTakeQuestion(true)} variant="success">
+                <span className="mr-2">⚖️</span>
+                Prendre cette question
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Question Content */}
+        <div className="flex-1 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-white mb-3">Question :</h2>
+                <p className="text-gray-300 leading-relaxed">{question.content}</p>
+              </div>
+              
+              {question.image_url && (
+                <div className="mb-4">
+                  <img
+                    src={question.image_url}
+                    alt="Question attachment"
+                    className="max-w-full rounded-lg border border-gray-600"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-sm text-gray-400 pt-4 border-t border-gray-700">
+                <span>
+                  Posée {formatDistanceToNow(new Date(question.created_at), {
+                    addSuffix: true,
+                    locale: fr
+                  })}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" />
+                  <span>
+                    Timeout dans {formatDistanceToNow(new Date(question.timeout_at), {
+                      locale: fr
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {!canTakeQuestion && (
+              <div className="mt-6 bg-yellow-900/20 border border-yellow-700 rounded-xl p-4">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
+                  <span className="text-yellow-300">
+                    {isJudge 
+                      ? "Cette question a déjà été assignée à un autre juge"
+                      : "Vous ne pouvez pas prendre cette question"
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Take Question Modal */}
+        {showTakeQuestion && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-screen items-center justify-center p-4">
+              <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" />
+              <div className="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 p-8">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-2xl">⚖️</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    🎯 Prendre cette question ?
+                  </h3>
+                  <p className="text-gray-300">
+                    Vous allez devenir le juge assigné à cette question
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-6 mb-6 border border-blue-500/30">
+                  <h4 className="font-semibold text-white mb-3 flex items-center">
+                    <span className="mr-2">📋</span>
+                    Rappel important :
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    <li className="flex items-start">
+                      <span className="mr-2 text-yellow-400">⏰</span>
+                      <span>Vous avez <strong>8 minutes</strong> pour répondre après avoir pris la question</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2 text-blue-400">💬</span>
+                      <span>Une conversation privée sera créée avec le joueur</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2 text-green-400">⭐</span>
+                      <span>Le joueur pourra vous évaluer à la fin</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2 text-purple-400">🏆</span>
+                      <span>Vous gagnerez des points selon votre performance</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowTakeQuestion(false)
+                      navigate('/questions')
+                    }}
+                    className="flex-1"
+                  >
+                    ❌ Annuler
+                  </Button>
+                  <Button
+                    onClick={takeQuestion}
+                    disabled={takingQuestion}
+                    className="flex-1"
+                    loading={takingQuestion}
+                  >
+                    <span className="mr-2">⚖️</span>
+                    {takingQuestion ? 'Prise en cours...' : 'Prendre la question'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -556,74 +748,6 @@ export function ConversationPage() {
                   className="flex-1"
                 >
                   🚀 Envoyer
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Take Question Modal */}
-      {showTakeQuestion && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" />
-            <div className="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 p-8">
-              <div className="text-center mb-6">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-2xl">⚖️</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  🎯 Prendre cette question ?
-                </h3>
-                <p className="text-gray-300">
-                  Vous allez devenir le juge assigné à cette question
-                </p>
-              </div>
-              
-              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-6 mb-6 border border-blue-500/30">
-                <h4 className="font-semibold text-white mb-3 flex items-center">
-                  <span className="mr-2">📋</span>
-                  Rappel important :
-                </h4>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li className="flex items-start">
-                    <span className="mr-2 text-yellow-400">⏰</span>
-                    <span>Vous avez <strong>8 minutes</strong> pour répondre après avoir pris la question</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2 text-blue-400">💬</span>
-                    <span>Une conversation privée sera créée avec le joueur</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2 text-green-400">⭐</span>
-                    <span>Le joueur pourra vous évaluer à la fin</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2 text-purple-400">🏆</span>
-                    <span>Vous gagnerez des points selon votre performance</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowTakeQuestion(false)
-                    navigate('/questions')
-                  }}
-                  className="flex-1"
-                >
-                  ❌ Annuler
-                </Button>
-                <Button
-                  onClick={takeQuestion}
-                  disabled={loading}
-                  className="flex-1"
-                  loading={loading}
-                >
-                  <span className="mr-2">⚖️</span>
-                  {loading ? 'Prise en cours...' : 'Prendre la question'}
                 </Button>
               </div>
             </div>

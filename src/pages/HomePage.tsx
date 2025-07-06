@@ -288,7 +288,7 @@ export function HomePage() {
               <div className="text-gray-300">Joueurs satisfaits</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-green-400 mb-2">⚡ < 2min</div>
+              <div className="text-3xl font-bold text-green-400 mb-2">⚡ &lt; 2min</div>
               <div className="text-gray-300">Réponse ultra-rapide</div>
             </div>
             <div>

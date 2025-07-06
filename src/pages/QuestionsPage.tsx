@@ -1,3 +1,4 @@
+// src/pages/QuestionsPage.tsx
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Filter, MessageSquare, Globe, Lock } from 'lucide-react'
@@ -85,6 +86,28 @@ export function QuestionsPage() {
     }
   }
 
+  const handleQuestionClick = async (question: Question) => {
+    try {
+      // Check if there's already a conversation for this question
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('question_id', question.id)
+        .single()
+
+      if (conversation) {
+        // Navigate to the conversation
+        navigate(`/conversation/${conversation.id}`)
+      } else {
+        // No conversation yet, navigate to question view
+        navigate(`/conversation/${question.id}`)
+      }
+    } catch (error) {
+      // If no conversation found or error, navigate to question view
+      navigate(`/conversation/${question.id}`)
+    }
+  }
+
   const filteredQuestions = questions.filter((question) => {
     const matchesSearch = question.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          question.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -115,7 +138,7 @@ export function QuestionsPage() {
               {user?.profile?.role === 'admin' 
                 ? '👑 Toutes les questions de la plateforme'
                 : user?.profile?.role === 'judge'
-                ? '⚖️ Vos missions de juge'
+                ? '⚖️ Vos missions de juge et questions publiques'
                 : showPublicOnly
                 ? '🌍 Questions publiques de la communauté'
                 : '📋 Vos questions et découvertes publiques'
@@ -219,7 +242,7 @@ export function QuestionsPage() {
               <QuestionCard
                 key={question.id}
                 question={question}
-                onClick={() => navigate(`/conversation/${question.id}`)}
+                onClick={() => handleQuestionClick(question)}
               />
             ))
           )}

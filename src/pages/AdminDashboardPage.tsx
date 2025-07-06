@@ -506,29 +506,67 @@ export function AdminDashboardPage() {
     }
   }
 
-  const assignQuestionToJudge = async (questionId: string, judgeId: string) => {
-    try {
-      setActionLoading(`assign-${questionId}`)
-      
-      const { error } = await supabase
-        .from('questions')
-        .update({
-          assigned_judge_id: judgeId,
-          status: 'assigned',
-          assigned_at: new Date().toISOString(),
-        })
-        .eq('id', questionId)
+const assignQuestionToJudge = async (questionId: string, judgeId: string) => {
+  try {
+    setActionLoading(`assign-${questionId}`)
+    
+    // Update question with judge assignment
+    const { error: questionError } = await supabase
+      .from('questions')
+      .update({
+        assigned_judge_id: judgeId,
+        status: 'assigned',
+        assigned_at: new Date().toISOString(),
+      })
+      .eq('id', questionId)
 
-      if (error) throw error
-      
-      await loadRecentQuestions()
-      await loadStats()
-    } catch (error) {
-      console.error('Error assigning question:', error)
-    } finally {
-      setActionLoading(null)
+    if (questionError) throw questionError
+
+    // Get question data to create conversation
+    const { data: questionData } = await supabase
+      .from('questions')
+      .select('user_id')
+      .eq('id', questionId)
+      .single()
+
+    if (questionData) {
+      // Create conversation
+      const { data: newConversation, error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          question_id: questionId,
+          user_id: questionData.user_id,
+          judge_id: judgeId,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          last_message_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (conversationError) throw conversationError
+
+      // Add system message
+      if (newConversation) {
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: newConversation.id,
+            sender_id: judgeId,
+            content: `Question assignée automatiquement par l'administrateur.`,
+            message_type: 'system'
+          })
+      }
     }
+    
+    await loadRecentQuestions()
+    await loadStats()
+  } catch (error) {
+    console.error('Error assigning question:', error)
+  } finally {
+    setActionLoading(null)
   }
+}
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -547,39 +585,42 @@ export function AdminDashboardPage() {
     }
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'success'
-      case 'disputed':
-        return 'danger'
-      case 'in_progress':
-        return 'info'
-      case 'assigned':
-        return 'info'
-      case 'waiting_for_judge':
-        return 'warning'
-      default:
-        return 'default'
-    }
+const getStatusBadgeVariant = (status: string) => {
+  switch (status) {
+    case 'waiting_for_judge':
+      return 'warning'
+    case 'assigned':
+      return 'info'
+    case 'in_progress':
+      return 'info'
+    case 'completed':
+      return 'success'
+    case 'disputed':
+      return 'danger'
+    default:
+      return 'default'
   }
+}
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'waiting_for_judge':
-        return 'En attente'
-      case 'assigned':
-        return 'Assignée'
-      case 'in_progress':
-        return 'En cours'
-      case 'completed':
-        return 'Résolue'
-      case 'disputed':
-        return 'En dispute'
-      default:
-        return status
-    }
+// 2. Fonction pour obtenir les labels de statuts
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'waiting_for_judge':
+      return '🕐 En attente de juge'
+    case 'assigned':
+      return '⚖️ Juge assigné'
+    case 'in_progress':
+      return '💬 En cours de traitement'
+    case 'completed':
+      return '✅ Résolue'
+    case 'disputed':
+      return '⚠️ En dispute'
+    case 'resolved':
+      return '✅ Résolue'
+    default:
+      return status
   }
+}
 
   const filteredUsers = allUsers.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

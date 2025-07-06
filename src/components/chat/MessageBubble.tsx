@@ -1,5 +1,6 @@
+// src/components/chat/MessageBubble.tsx
 import React from 'react'
-import { Crown, ExternalLink, Eye } from 'lucide-react'
+import { Crown, ExternalLink, Eye, Bot, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Message, Profile } from '../../types/database'
@@ -13,6 +14,25 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, isOwn, isJudge }: MessageBubbleProps) {
   const cardData = message.metadata?.card
+
+  // Handle system messages
+  if (message.message_type === 'system') {
+    return (
+      <div className="flex justify-center my-4">
+        <div className="bg-gray-700/50 text-gray-300 px-4 py-2 rounded-full text-sm border border-gray-600 flex items-center space-x-2">
+          <Bot className="h-4 w-4 text-blue-400" />
+          <span>{message.content}</span>
+          <Clock className="h-3 w-3 text-gray-400" />
+          <span className="text-xs text-gray-400">
+            {formatDistanceToNow(new Date(message.created_at), {
+              addSuffix: true,
+              locale: fr
+            })}
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -40,8 +60,6 @@ export function MessageBubble({ message, isOwn, isJudge }: MessageBubbleProps) {
           className={`rounded-lg px-4 py-2 ${
             isOwn
               ? 'bg-blue-600 text-white'
-              : message.message_type === 'system'
-              ? 'bg-gray-700/50 text-gray-300 border border-gray-600'
               : 'bg-gray-700 text-white'
           }`}
         >

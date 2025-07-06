@@ -1,6 +1,7 @@
+// src/pages/DashboardPage.tsx - PARTIE 1/3
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MessageSquare, Crown, Star, Clock, TrendingUp } from 'lucide-react'
+import { Plus, MessageSquare, Crown, Star, Clock, TrendingUp, Eye, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -87,6 +88,42 @@ export function DashboardPage() {
     }
   }
 
+  const handleQuestionClick = (question: Question) => {
+    // Navigate based on question status and conversation existence
+    if (question.status === 'waiting_for_judge') {
+      // For waiting questions, show the question view
+      navigate(`/conversation/${question.id}`)
+    } else {
+      // For questions with conversations, try to find the conversation
+      navigateToConversation(question.id)
+    }
+  }
+
+  const navigateToConversation = async (questionId: string) => {
+    try {
+      // Try to find existing conversation for this question
+      const { data: conversation, error } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('question_id', questionId)
+        .single()
+
+      if (conversation) {
+        // Navigate to the conversation
+        navigate(`/conversation/${conversation.id}`)
+      } else {
+        // No conversation found, navigate to question view
+        navigate(`/conversation/${questionId}`)
+      }
+    } catch (error) {
+      console.error('Error finding conversation:', error)
+      // Fallback to question view
+      navigate(`/conversation/${questionId}`)
+    }
+  }
+
+  // src/pages/DashboardPage.tsx - PARTIE 2/3 (JSX principal)
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
@@ -131,7 +168,7 @@ export function DashboardPage() {
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" />
               </div>
               <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm text-gray-400">En attente</p>
+                <p className="text-xs sm:text-sm text-gray-400">En cours</p>
                 <p className="text-lg sm:text-2xl font-bold text-yellow-400">{stats.pendingQuestions}</p>
               </div>
             </div>
@@ -173,18 +210,31 @@ export function DashboardPage() {
               <span className="mr-2">🙋‍♂️</span>
               Juudge! J'ai une question
             </Button>
-            <Button variant="outline" size="lg" className="flex-1 sm:flex-none">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="flex-1 sm:flex-none"
+              onClick={() => navigate('/questions')}
+            >
               <span className="mr-2">📋</span>
-              Mes questions
+              Toutes mes questions
             </Button>
           </div>
         </div>
+        
+        {/* Continue dans la partie 3... */}
+
+        // src/pages/DashboardPage.tsx - PARTIE 3/3 (Section questions et modal)
 
         {/* Recent Questions */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-white">🔥 Mes dernières questions</h2>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/questions')}
+            >
               📋 Tout voir
             </Button>
           </div>
@@ -206,20 +256,12 @@ export function DashboardPage() {
           ) : (
             <div className="space-y-4">
               {recentQuestions.map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  onClick={() => {
-                    // Navigate to conversation for all questions
-                    if (question.status === 'waiting_for_judge') {
-                      // For waiting questions, show the question view
-                      navigate(`/conversation/${question.id}`)
-                    } else if (question.status === 'assigned' || question.status === 'in_progress' || question.status === 'completed') {
-                      // For questions with conversations, go to conversation
-                      navigate(`/conversation/${question.id}`)
-                    }
-                  }}
-                />
+                <div key={question.id} className="relative">
+                  <QuestionCard
+                    question={question}
+                    onClick={() => handleQuestionClick(question)}
+                  />
+                </div>
               ))}
             </div>
           )}

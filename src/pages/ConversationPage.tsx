@@ -604,6 +604,7 @@ export function ConversationPage() {
                     <span>Vous gagnerez des points selon votre performance</span>
                   </li>
                 </ul>
+              </div>
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
@@ -629,7 +630,7 @@ export function ConversationPage() {
           </div>
         </div>
       )}
-              </div>
+
       <CardSearchModal
         isOpen={showCardSearch}
         onClose={() => setShowCardSearch(false)}

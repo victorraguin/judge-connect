@@ -1,23 +1,21 @@
-// src/pages/ConversationPage.tsx - PARTIE 1/4
+// src/pages/ConversationPage.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock, AlertTriangle, Eye, MessageSquare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
-import { notificationService } from '../lib/notificationService'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { CardSearchModal } from '../components/cards/CardSearchModal'
 import { MessageBubble } from '../components/chat/MessageBubble'
+import { TypingIndicator } from '../components/chat/TypingIndicator'
+import { OnlineIndicator } from '../components/chat/OnlineIndicator'
+import { useRealtimeConversation } from '../hooks/useRealtimeConversation'
+import { notificationService } from '../lib/notificationService'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { Question, Conversation, Message, Profile } from '../types/database'
-
-interface ConversationWithDetails extends Conversation {
-  question: Question & { user: Profile }
-  messages: (Message & { sender: Profile })[]
-}
+import type { Question, Profile } from '../types/database'
 
 export function ConversationPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,7 +23,6 @@ export function ConversationPage() {
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
-  const [conversation, setConversation] = useState<ConversationWithDetails | null>(null)
   const [question, setQuestion] = useState<Question & { user: Profile } | null>(null)
   const [loading, setLoading] = useState(true)
   const [messageText, setMessageText] = useState('')
@@ -37,6 +34,20 @@ export function ConversationPage() {
   const [showTakeQuestion, setShowTakeQuestion] = useState(false)
   const [takingQuestion, setTakingQuestion] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
+  const [userProfiles, setUserProfiles] = useState<{ [key: string]: Profile }>({})
+
+  // Use realtime conversation hook
+  const {
+    messages,
+    conversation,
+    onlineUsers,
+    typingUsers,
+    sendMessage: realtimeSendMessage,
+    sendTypingIndicator,
+    loadConversation
+  } = useRealtimeConversation({ 
+    conversationId: conversation?.id || null 
+  })
 
   // Effects
   useEffect(() => {
@@ -46,16 +57,10 @@ export function ConversationPage() {
   }, [id])
 
   useEffect(() => {
-    if (conversation?.messages) {
+    if (messages.length > 0) {
       scrollToBottom()
     }
-  }, [conversation?.messages])
-
-  useEffect(() => {
-    if (conversation) {
-      subscribeToMessages()
-    }
-  }, [conversation?.id])
+  }, [messages])
 
   // Timer for timeout countdown
   useEffect(() => {
@@ -76,11 +81,30 @@ export function ConversationPage() {
     }
   }, [question?.timeout_at])
 
+  // Load user profiles for typing indicators
+  useEffect(() => {
+    const loadUserProfiles = async () => {
+      if (conversation) {
+        const userIds = [conversation.user_id, conversation.judge_id].filter(Boolean)
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds)
+
+        const profileMap: { [key: string]: Profile } = {}
+        profiles?.forEach(profile => {
+          profileMap[profile.id] = profile
+        })
+        setUserProfiles(profileMap)
+      }
+    }
+
+    loadUserProfiles()
+  }, [conversation])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
-
-  // src/pages/ConversationPage.tsx - PARTIE 2/4 (Functions de chargement)
 
   const loadQuestionOrConversation = async () => {
     if (!id) return
@@ -124,32 +148,9 @@ export function ConversationPage() {
       }
 
       if (conversationData) {
-        // Load messages for existing conversation
-        const { data: messagesData, error: messagesError } = await supabase
-          .from('messages')
-          .select(`
-            *,
-            sender:profiles!messages_sender_id_fkey(*)
-          `)
-          .eq('conversation_id', conversationData.id)
-          .order('created_at', { ascending: true })
-
-        if (messagesError) throw messagesError
-
-        setConversation({
-          ...conversationData,
-          messages: messagesData || []
-        })
-
-        // Mark messages as read for the current user
-        if (messagesData?.length && user?.id) {
-          await supabase
-            .from('messages')
-            .update({ read_at: new Date().toISOString() })
-            .eq('conversation_id', conversationData.id)
-            .neq('sender_id', user.id)
-            .is('read_at', null)
-        }
+        // Conversation exists, it will be loaded by the realtime hook
+        // Just trigger the load
+        await loadConversation()
       } else {
         // No conversation found, try to load question
         const { data: questionData, error: questionError } = await supabase
@@ -190,43 +191,6 @@ export function ConversationPage() {
       setLoading(false)
     }
   }
-
-  const subscribeToMessages = () => {
-    if (!conversation?.id) return
-
-    const subscription = supabase
-      .channel(`conversation-${conversation.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversation.id}`
-      }, async (payload) => {
-        // Load sender info
-        const { data: sender } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', payload.new.sender_id)
-          .single()
-
-        const newMessage = {
-          ...payload.new,
-          sender: sender
-        } as Message & { sender: Profile }
-
-        setConversation(prev => prev ? {
-          ...prev,
-          messages: [...prev.messages, newMessage]
-        } : null)
-      })
-      .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }
-
-  // src/pages/ConversationPage.tsx - PARTIE 3/4 (Functions d'actions)
 
   const takeQuestion = async () => {
     if (!question || !user || user.profile?.role !== 'judge') return
@@ -279,39 +243,8 @@ export function ConversationPage() {
         user.id
       )
 
-      // Load the full conversation data
-      const { data: fullConversation } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          question:questions!conversations_question_id_fkey(
-            *,
-            user:profiles!questions_user_id_fkey(*)
-          ),
-          user:profiles!conversations_user_id_fkey(*),
-          judge:profiles!conversations_judge_id_fkey(*)
-        `)
-        .eq('id', newConversation.id)
-        .single()
-
-      if (fullConversation) {
-        // Load initial system message
-        const { data: messagesData } = await supabase
-          .from('messages')
-          .select(`
-            *,
-            sender:profiles!messages_sender_id_fkey(*)
-          `)
-          .eq('conversation_id', newConversation.id)
-          .order('created_at', { ascending: true })
-
-        setConversation({
-          ...fullConversation,
-          messages: messagesData || []
-        })
-        setQuestion(null)
-        setShowTakeQuestion(false)
-      }
+      // Navigate to the new conversation
+      navigate(`/conversation/${newConversation.id}`)
 
     } catch (error) {
       console.error('Error taking question:', error)
@@ -320,45 +253,12 @@ export function ConversationPage() {
     }
   }
 
-  const sendMessage = async () => {
+  const sendMessageHandler = async () => {
     if (!messageText.trim() || !conversation || !user) return
 
     try {
       setSending(true)
-
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          content: messageText.trim(),
-          message_type: 'text'
-        })
-
-      if (error) throw error
-
-      // Update conversation last message time and status
-      await supabase
-        .from('conversations')
-        .update({ 
-          last_message_at: new Date().toISOString()
-        })
-        .eq('id', conversation.id)
-
-      // Update question status to in_progress if it's the first non-system message
-      if (conversation.question.status === 'assigned') {
-        await supabase
-          .from('questions')
-          .update({ status: 'in_progress' })
-          .eq('id', conversation.question.id)
-
-        // Update local state
-        setConversation(prev => prev ? {
-          ...prev,
-          question: { ...prev.question, status: 'in_progress' }
-        } : null)
-      }
-
+      await realtimeSendMessage(messageText)
       setMessageText('')
     } catch (error) {
       console.error('Error sending message:', error)
@@ -380,23 +280,7 @@ export function ConversationPage() {
         oracle_text: card.oracle_text
       }
 
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          content: `Carte partagée: ${card.name}`,
-          message_type: 'text',
-          metadata: { card: cardData }
-        })
-
-      if (error) throw error
-
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversation.id)
-
+      await realtimeSendMessage(`Carte partagée: ${card.name}`, { card: cardData })
     } catch (error) {
       console.error('Error sending card:', error)
     }
@@ -440,14 +324,6 @@ export function ConversationPage() {
         conversation.user_id,
         user.id
       )
-
-      // Update local state
-      setConversation(prev => prev ? {
-        ...prev,
-        status: 'ended',
-        ended_at: new Date().toISOString(),
-        question: { ...prev.question, status: 'completed', completed_at: new Date().toISOString() }
-      } : null)
 
       // Show rating modal if user
       if (user.id === conversation.user_id) {
@@ -530,7 +406,9 @@ export function ConversationPage() {
     }
   }
 
-  // src/pages/ConversationPage.tsx - PARTIE 4/4 (Helper functions et JSX)
+  const handleTyping = () => {
+    sendTypingIndicator()
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -783,8 +661,8 @@ export function ConversationPage() {
 
   const isJudge = user?.id === conversation.judge_id
   const isUser = user?.id === conversation.user_id
-  const canComplete = isJudge && conversation.status === 'active' && conversation.question.status === 'in_progress'
-  const canViewOnly = conversation.question.is_public && !isJudge && !isUser
+  const canComplete = isJudge && conversation.status === 'active' && (conversation.question?.status === 'in_progress' || conversation.question?.status === 'assigned')
+  const canViewOnly = conversation.question?.is_public && !isJudge && !isUser
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
@@ -797,16 +675,16 @@ export function ConversationPage() {
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-white">
-                {conversation.question.title}
+                {conversation.question?.title}
               </h1>
               <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <span>avec {isJudge ? conversation.question.user.full_name : conversation.judge?.full_name}</span>
+                <span>avec {isJudge ? conversation.question?.user?.full_name : conversation.judge?.full_name}</span>
                 <Badge variant="info" size="sm">
-                  {conversation.question.category}
+                  {conversation.question?.category}
                 </Badge>
                 <Badge variant={conversation.status === 'active' ? 'success' : 'default'} size="sm">
-                  <span className={getStatusColor(conversation.question.status)}>
-                    {getStatusLabel(conversation.question.status)}
+                  <span className={getStatusColor(conversation.question?.status || '')}>
+                    {getStatusLabel(conversation.question?.status || '')}
                   </span>
                 </Badge>
                 {canViewOnly && (
@@ -817,6 +695,19 @@ export function ConversationPage() {
           </div>
           
           <div className="flex items-center space-x-2">
+            {/* Online indicator */}
+            {conversation.judge_id && conversation.user_id && (
+              <OnlineIndicator
+                onlineUsers={onlineUsers}
+                currentUserId={user?.id || ''}
+                otherUserId={isJudge ? conversation.user_id : conversation.judge_id}
+                otherUserName={isJudge ? 
+                  conversation.question?.user?.full_name || conversation.question?.user?.email || 'Utilisateur' :
+                  conversation.judge?.full_name || conversation.judge?.email || 'Juge'
+                }
+              />
+            )}
+            
             {canComplete && (
               <Button onClick={completeConversation} variant="success" size="sm">
                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -835,8 +726,8 @@ export function ConversationPage() {
               <span className="mr-2">📋</span>
               Question originale :
             </h3>
-            <p className="text-gray-300 mb-3">{conversation.question.content}</p>
-            {conversation.question.image_url && (
+            <p className="text-gray-300 mb-3">{conversation.question?.content}</p>
+            {conversation.question?.image_url && (
               <img
                 src={conversation.question.image_url}
                 alt="Question attachment"
@@ -845,8 +736,8 @@ export function ConversationPage() {
             )}
             <div className="flex items-center justify-between mt-3 text-sm text-gray-400">
               <span>
-                📅 Posée par {conversation.question.user.full_name} • {' '}
-                {formatDistanceToNow(new Date(conversation.question.created_at), {
+                📅 Posée par {conversation.question?.user?.full_name} • {' '}
+                {formatDistanceToNow(new Date(conversation.question?.created_at || ''), {
                   addSuffix: true,
                   locale: fr
                 })}
@@ -877,7 +768,7 @@ export function ConversationPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto space-y-4">
-          {conversation.messages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400">
@@ -888,7 +779,7 @@ export function ConversationPage() {
               </p>
             </div>
           ) : (
-            conversation.messages.map((message) => (
+            messages.map((message) => (
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -897,6 +788,13 @@ export function ConversationPage() {
               />
             ))
           )}
+          
+          {/* Typing Indicator */}
+          <TypingIndicator 
+            typingUsers={typingUsers} 
+            userProfiles={userProfiles}
+          />
+          
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -920,19 +818,22 @@ export function ConversationPage() {
                 <div className="flex items-end space-x-2">
                   <textarea
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={(e) => {
+                      setMessageText(e.target.value)
+                      handleTyping()
+                    }}
                     placeholder="💬 Tapez votre message..."
                     className="flex-1 rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 resize-none min-h-[44px] max-h-32 px-4 py-3"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault()
-                        sendMessage()
+                        sendMessageHandler()
                       }
                     }}
                   />
                   <Button
-                    onClick={sendMessage}
+                    onClick={sendMessageHandler}
                     disabled={!messageText.trim() || sending}
                     loading={sending}
                   >

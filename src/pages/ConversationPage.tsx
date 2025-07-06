@@ -46,7 +46,7 @@ export function ConversationPage() {
     sendTypingIndicator,
     loadConversation
   } = useRealtimeConversation({ 
-    conversationId: conversation?.id || null 
+    conversationId: id || null 
   })
 
   // Effects

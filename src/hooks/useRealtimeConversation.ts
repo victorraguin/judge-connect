@@ -17,27 +17,43 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
   const presenceRef = useRef<any>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Load initial messages
+  // ✅ CORRECTION 1 : Utiliser conversationId directement
   useEffect(() => {
     if (conversationId) {
+      console.log('Loading conversation data for:', conversationId)
       loadMessages()
       loadConversation()
+    } else {
+      // Reset state when no conversation
+      setMessages([])
+      setConversation(null)
+      setOnlineUsers([])
+      setTypingUsers([])
     }
-  }, [conversationId])
+  }, [conversationId]) // Utiliser conversationId directement
 
-  // Set up realtime subscriptions
+  // ✅ CORRECTION 2 : Améliorer la gestion des subscriptions
   useEffect(() => {
-    if (!conversationId || !user) return
+    if (!conversationId || !user) {
+      console.log('No conversation ID or user, skipping realtime setup')
+      return
+    }
+
+    console.log('Setting up realtime subscriptions for conversation:', conversationId)
 
     // Clean up existing subscriptions
     if (channelRef.current) {
+      console.log('Cleaning up existing channel subscription')
       channelRef.current.unsubscribe()
+      channelRef.current = null
     }
     if (presenceRef.current) {
+      console.log('Cleaning up existing presence subscription')
       presenceRef.current.unsubscribe()
+      presenceRef.current = null
     }
 
-    // Messages subscription
+    // ✅ CORRECTION 3 : Subscription plus robuste pour les messages
     channelRef.current = supabase
       .channel(`conversation-${conversationId}`)
       .on('postgres_changes', {
@@ -46,48 +62,55 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
       }, async (payload) => {
-        console.log('New message received:', payload.new)
+        console.log('📨 New message received via realtime:', payload.new)
         
-        // Load sender info
-        const { data: sender } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', payload.new.sender_id)
-          .single()
+        try {
+          // Load sender info avec gestion d'erreur
+          const { data: sender, error: senderError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', payload.new.sender_id)
+            .single()
 
-        const newMessage = {
-          ...payload.new,
-          sender: sender
-        } as Message & { sender: Profile }
-
-        setMessages(prev => {
-          // Avoid duplicates
-          if (prev.find(m => m.id === newMessage.id)) {
-            return prev
+          if (senderError) {
+            console.error('Error loading sender info:', senderError)
+            return
           }
-          return [...prev, newMessage]
-        })
 
-        // Mark as read if not sent by current user
-        if (payload.new.sender_id !== user.id) {
-          await supabase
-            .from('messages')
-            .update({ read_at: new Date().toISOString() })
-            .eq('id', payload.new.id)
+          const newMessage = {
+            ...payload.new,
+            sender: sender
+          } as Message & { sender: Profile }
 
-          // Send notification to recipient about new message
-          const { notificationService } = await import('../lib/notificationService')
-          await notificationService.notifyNewMessage(
-            conversationId,
-            payload.new.sender_id,
-            user.id,
-            payload.new.content || 'Nouveau message'
-          )
-        }
+          console.log('Adding new message to state:', newMessage.id)
 
-        // Play notification sound for new messages
-        if (payload.new.sender_id !== user.id) {
-          playNotificationSound()
+          setMessages(prev => {
+            // ✅ CORRECTION 4 : Éviter les doublons plus efficacement
+            const exists = prev.find(m => m.id === newMessage.id)
+            if (exists) {
+              console.log('Message already exists, skipping:', newMessage.id)
+              return prev
+            }
+            
+            console.log('Adding new message to state:', newMessage.id)
+            return [...prev, newMessage].sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            )
+          })
+
+          // Mark as read if not sent by current user
+          if (payload.new.sender_id !== user.id) {
+            console.log('Marking message as read:', newMessage.id)
+            await supabase
+              .from('messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', payload.new.id)
+
+            // Play notification sound for new messages
+            playNotificationSound()
+          }
+        } catch (error) {
+          console.error('Error processing new message:', error)
         }
       })
       .on('postgres_changes', {
@@ -96,7 +119,7 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
       }, (payload) => {
-        console.log('Message updated:', payload.new)
+        console.log('📝 Message updated:', payload.new.id)
         setMessages(prev => prev.map(msg => 
           msg.id === payload.new.id 
             ? { ...msg, ...payload.new }
@@ -109,27 +132,37 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         table: 'conversations',
         filter: `id=eq.${conversationId}`
       }, (payload) => {
-        console.log('Conversation updated:', payload.new)
+        console.log('💬 Conversation updated:', payload.new)
         setConversation(prev => prev ? { ...prev, ...payload.new } : null)
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('📡 Message channel status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Message channel subscribed successfully')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Message channel error')
+        }
+      })
 
-    // Presence subscription for online users and typing indicators
+    // ✅ CORRECTION 5 : Presence avec meilleure gestion d'erreurs
     presenceRef.current = supabase
       .channel(`presence-conversation-${conversationId}`)
       .on('presence', { event: 'sync' }, () => {
-        const state = presenceRef.current.presenceState()
-        const users = Object.keys(state).map(key => state[key][0]?.user_id).filter(Boolean)
-        setOnlineUsers(users)
-        console.log('Online users:', users)
+        const state = presenceRef.current?.presenceState()
+        if (state) {
+          const users = Object.keys(state).map(key => state[key][0]?.user_id).filter(Boolean)
+          console.log('👥 Online users updated:', users)
+          setOnlineUsers(users)
+        }
       })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', newPresences)
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        console.log('👋 User joined:', newPresences)
       })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', leftPresences)
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        console.log('👋 User left:', leftPresences)
       })
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        console.log('⌨️ User typing:', payload.user_id)
         if (payload.user_id !== user.id) {
           setTypingUsers(prev => {
             if (!prev.includes(payload.user_id)) {
@@ -145,30 +178,48 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         }
       })
       .on('broadcast', { event: 'stop_typing' }, ({ payload }) => {
+        console.log('⌨️ User stopped typing:', payload.user_id)
         setTypingUsers(prev => prev.filter(id => id !== payload.user_id))
       })
       .subscribe(async (status) => {
+        console.log('📡 Presence channel status:', status)
         if (status === 'SUBSCRIBED') {
+          console.log('✅ Presence channel subscribed successfully')
           // Track presence
-          await presenceRef.current.track({
-            user_id: user.id,
-            online_at: new Date().toISOString(),
-          })
+          try {
+            await presenceRef.current?.track({
+              user_id: user.id,
+              online_at: new Date().toISOString(),
+            })
+            console.log('📍 Presence tracked successfully')
+          } catch (error) {
+            console.error('❌ Error tracking presence:', error)
+          }
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Presence channel error')
         }
       })
 
     return () => {
+      console.log('🧹 Cleaning up realtime subscriptions')
       if (channelRef.current) {
         channelRef.current.unsubscribe()
+        channelRef.current = null
       }
       if (presenceRef.current) {
         presenceRef.current.unsubscribe()
+        presenceRef.current = null
       }
     }
   }, [conversationId, user])
 
   const loadMessages = async () => {
-    if (!conversationId) return
+    if (!conversationId) {
+      console.log('No conversation ID, skipping message loading')
+      return
+    }
+
+    console.log('📥 Loading messages for conversation:', conversationId)
 
     try {
       const { data, error } = await supabase
@@ -180,15 +231,25 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error loading messages:', error)
+        throw error
+      }
+
+      console.log(`✅ Loaded ${data?.length || 0} messages`)
       setMessages(data || [])
     } catch (error) {
-      console.error('Error loading messages:', error)
+      console.error('❌ Error loading messages:', error)
     }
   }
 
   const loadConversation = async () => {
-    if (!conversationId) return
+    if (!conversationId) {
+      console.log('No conversation ID, skipping conversation loading')
+      return
+    }
+
+    console.log('💬 Loading conversation:', conversationId)
 
     try {
       const { data, error } = await supabase
@@ -205,28 +266,53 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         .eq('id', conversationId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error loading conversation:', error)
+        throw error
+      }
+
+      console.log('✅ Conversation loaded successfully')
       setConversation(data)
     } catch (error) {
-      console.error('Error loading conversation:', error)
+      console.error('❌ Error loading conversation:', error)
     }
   }
 
+  // ✅ CORRECTION 6 : Améliorer la fonction sendMessage
   const sendMessage = async (content: string, metadata?: any) => {
-    if (!conversationId || !user || !content.trim()) return
+    if (!conversationId || !user || !content.trim()) {
+      console.log('Cannot send message: missing data', { conversationId, user: !!user, content: content.trim() })
+      return
+    }
+
+    console.log('📤 Sending message:', content.substring(0, 50) + '...')
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: content.trim(),
-          message_type: 'text',
-          metadata: metadata || null
-        })
+      const messageData = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: content.trim(),
+        message_type: 'text' as const,
+        metadata: metadata || null
+      }
 
-      if (error) throw error
+      console.log('📤 Message data:', messageData)
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(*)
+        `)
+        .single()
+
+      if (error) {
+        console.error('❌ Error sending message:', error)
+        throw error
+      }
+
+      console.log('✅ Message sent successfully:', data.id)
 
       // Update conversation last message time
       await supabase
@@ -245,14 +331,29 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
         })
       }
 
+      // ✅ CORRECTION 7 : Ajouter immédiatement le message localement pour un feedback immédiat
+      setMessages(prev => {
+        const exists = prev.find(m => m.id === data.id)
+        if (exists) return prev
+        
+        return [...prev, data].sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+      })
+
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('❌ Error sending message:', error)
       throw error
     }
   }
 
   const sendTypingIndicator = () => {
-    if (!presenceRef.current || !user) return
+    if (!presenceRef.current || !user) {
+      console.log('Cannot send typing indicator: missing presence or user')
+      return
+    }
+
+    console.log('⌨️ Sending typing indicator')
 
     presenceRef.current.send({
       type: 'broadcast',
@@ -267,6 +368,7 @@ export function useRealtimeConversation({ conversationId }: UseRealtimeConversat
 
     // Stop typing after 3 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
+      console.log('⌨️ Auto-stopping typing indicator')
       presenceRef.current?.send({
         type: 'broadcast',
         event: 'stop_typing',

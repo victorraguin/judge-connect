@@ -568,6 +568,25 @@ const assignQuestionToJudge = async (questionId: string, judgeId: string) => {
   }
 }
 
+  const handleQuestionClick = async (questionId: string) => {
+  try {
+    // Check if there's a conversation for this question
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('question_id', questionId)
+      .single()
+
+    if (conversation) {
+      navigate(`/conversation/${conversation.id}`)
+    } else {
+      navigate(`/conversation/${questionId}`)
+    }
+  } catch (error) {
+    navigate(`/conversation/${questionId}`)
+  }
+}
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'question':
@@ -1108,27 +1127,60 @@ const getStatusLabel = (status: string) => {
                             })}
                           </p>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {question.status === 'waiting_for_judge' && (
-                              <select
-                                onChange={(e) => assignQuestionToJudge(question.id, e.target.value)}
-                                className="bg-gray-700 border border-gray-600 rounded text-white text-xs px-2 py-1"
-                                defaultValue=""
-                              >
-                                <option value="" disabled>Assigner à...</option>
-                                {topJudges.filter(j => j.is_available).map(judge => (
-                                  <option key={judge.id} value={judge.user_id}>
-                                    {judge.profile?.full_name || judge.profile?.email}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                        </td>
+<td className="px-6 py-4">
+  <div className="flex items-center space-x-2">
+    <Button 
+      variant="ghost" 
+      size="sm"
+      onClick={() => handleQuestionClick(question.id)}
+    >
+      <Eye className="h-4 w-4" />
+    </Button>
+    
+    {question.status === 'waiting_for_judge' && (
+      <select
+        onChange={(e) => {
+          if (e.target.value) {
+            assignQuestionToJudge(question.id, e.target.value)
+          }
+        }}
+        className="bg-gray-700 border border-gray-600 rounded text-white text-xs px-2 py-1"
+        defaultValue=""
+        disabled={actionLoading === `assign-${question.id}`}
+      >
+        <option value="" disabled>Assigner à...</option>
+        {topJudges.filter(j => j.is_available).map(judge => (
+          <option key={judge.id} value={judge.user_id}>
+            {judge.profile?.full_name || judge.profile?.email}
+          </option>
+        ))}
+      </select>
+    )}
+    
+    {question.status === 'assigned' && (
+      <span className="text-xs text-blue-400 flex items-center">
+        <Crown className="h-3 w-3 mr-1" />
+        Assignée à {question.assigned_judge?.full_name || 'Juge'}
+      </span>
+    )}
+    
+    {question.status === 'in_progress' && (
+      <span className="text-xs text-green-400 flex items-center">
+        <MessageSquare className="h-3 w-3 mr-1" />
+        Discussion active
+      </span>
+    )}
+    
+    {question.status === 'completed' && question.completed_at && (
+      <span className="text-xs text-gray-400">
+        Résolue {formatDistanceToNow(new Date(question.completed_at), {
+          addSuffix: true,
+          locale: fr
+        })}
+      </span>
+    )}
+  </div>
+</td>
                       </tr>
                     ))}
                   </tbody>

@@ -101,7 +101,7 @@ export function ConversationPage() {
           judge:profiles!conversations_judge_id_fkey(*)
         `)
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       // If no conversation found, try to find conversation by question_id
       if (!conversationData) {
@@ -117,7 +117,7 @@ export function ConversationPage() {
             judge:profiles!conversations_judge_id_fkey(*)
           `)
           .eq('question_id', id)
-          .single()
+          .maybeSingle()
 
         conversationData = convByQuestion
         convError = convByQuestionError

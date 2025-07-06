@@ -307,109 +307,169 @@ const loadStats = async () => {
     }
   }
 
-  const loadRecentActivity = async () => {
-    try {
-      // Load recent questions
-      const { data: recentQuestions } = await supabase
-        .from('questions')
-        .select(`
-          id, title, created_at,
-          user:profiles!questions_user_id_fkey(id, full_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5)
+const loadRecentActivity = async () => {
+  try {
+    // Load recent questions avec plus de contexte
+    const { data: recentQuestions } = await supabase
+      .from('questions')
+      .select(`
+        id, title, created_at, status, assigned_at, completed_at,
+        user:profiles!questions_user_id_fkey(id, full_name, email),
+        assigned_judge:profiles!questions_assigned_judge_id_fkey(id, full_name, email)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5)
 
-      // Load recent conversations
-      const { data: recentConversations } = await supabase
-        .from('conversations')
-        .select(`
-          id, started_at,
-          user:profiles!conversations_user_id_fkey(id, full_name, email),
-          judge:profiles!conversations_judge_id_fkey(id, full_name, email),
-          question:questions(id, title)
-        `)
-        .order('started_at', { ascending: false })
-        .limit(5)
+    // Load recent conversations avec plus de détails
+    const { data: recentConversations } = await supabase
+      .from('conversations')
+      .select(`
+        id, started_at, ended_at, status,
+        user:profiles!conversations_user_id_fkey(id, full_name, email),
+        judge:profiles!conversations_judge_id_fkey(id, full_name, email),
+        question:questions(id, title, status)
+      `)
+      .order('started_at', { ascending: false })
+      .limit(5)
 
-      // Load recent disputes
-      const { data: recentDisputes } = await supabase
-        .from('disputes')
-        .select(`
-          id, created_at,
-          user:profiles!disputes_user_id_fkey(id, full_name, email),
-          judge:profiles!disputes_judge_id_fkey(id, full_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(3)
+    // Load recent disputes
+    const { data: recentDisputes } = await supabase
+      .from('disputes')
+      .select(`
+        id, created_at, status,
+        user:profiles!disputes_user_id_fkey(id, full_name, email),
+        judge:profiles!disputes_judge_id_fkey(id, full_name, email)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(3)
 
-      // Load recent ratings
-      const { data: recentRatings } = await supabase
-        .from('ratings')
-        .select(`
-          id, rating, created_at,
-          user:profiles!ratings_user_id_fkey(id, full_name, email),
-          judge:profiles!ratings_judge_id_fkey(id, full_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(3)
+    // Load recent ratings
+    const { data: recentRatings } = await supabase
+      .from('ratings')
+      .select(`
+        id, rating, created_at,
+        user:profiles!ratings_user_id_fkey(id, full_name, email),
+        judge:profiles!ratings_judge_id_fkey(id, full_name, email)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(3)
 
-      const activities: RecentActivity[] = []
+    const activities: RecentActivity[] = []
 
-      // Add questions
-      recentQuestions?.forEach(q => {
+    // Add questions avec gestion des statuts
+    recentQuestions?.forEach(q => {
+      activities.push({
+        id: `q-${q.id}`,
+        type: 'question',
+        description: `Nouvelle question: "${q.title}" (${getStatusLabel(q.status)})`,
+        timestamp: q.created_at,
+        user: q.user,
+      })
+
+      // Add assignment activity if assigned
+      if (q.assigned_at && q.assigned_judge) {
         activities.push({
-          id: `q-${q.id}`,
-          type: 'question',
-          description: `Nouvelle question: "${q.title}"`,
-          timestamp: q.created_at,
+          id: `qa-${q.id}`,
+          type: 'judge_assigned',
+          description: `Question "${q.title}" assignée`,
+          timestamp: q.assigned_at,
           user: q.user,
+          judge: q.assigned_judge,
         })
-      })
+      }
 
-      // Add conversations
-      recentConversations?.forEach(c => {
+      // Add completion activity if completed
+      if (q.completed_at) {
         activities.push({
-          id: `c-${c.id}`,
-          type: 'conversation',
-          description: `Conversation démarrée pour "${c.question?.title}"`,
-          timestamp: c.started_at,
-          user: c.user,
-          judge: c.judge,
+          id: `qc-${q.id}`,
+          type: 'question',
+          description: `Question "${q.title}" résolue`,
+          timestamp: q.completed_at,
+          user: q.user,
+          judge: q.assigned_judge,
         })
+      }
+    })
+
+    // Add conversations
+    recentConversations?.forEach(c => {
+      activities.push({
+        id: `c-${c.id}`,
+        type: 'conversation',
+        description: `Conversation ${c.status === 'ended' ? 'terminée' : 'démarrée'} pour "${c.question?.title}"`,
+        timestamp: c.ended_at || c.started_at,
+        user: c.user,
+        judge: c.judge,
       })
+    })
 
-      // Add disputes
-      recentDisputes?.forEach(d => {
-        activities.push({
-          id: `d-${d.id}`,
-          type: 'dispute',
-          description: `Nouvelle dispute créée`,
-          timestamp: d.created_at,
-          user: d.user,
-          judge: d.judge,
-        })
+    // Add disputes
+    recentDisputes?.forEach(d => {
+      activities.push({
+        id: `d-${d.id}`,
+        type: 'dispute',
+        description: `Dispute ${d.status === 'resolved' ? 'résolue' : 'créée'}`,
+        timestamp: d.created_at,
+        user: d.user,
+        judge: d.judge,
       })
+    })
 
-      // Add ratings
-      recentRatings?.forEach(r => {
-        activities.push({
-          id: `r-${r.id}`,
-          type: 'rating',
-          description: `Note donnée: ${r.rating}/5`,
-          timestamp: r.created_at,
-          user: r.user,
-          judge: r.judge,
-        })
+    // Add ratings
+    recentRatings?.forEach(r => {
+      activities.push({
+        id: `r-${r.id}`,
+        type: 'rating',
+        description: `Note donnée: ${r.rating}/5 étoiles`,
+        timestamp: r.created_at,
+        user: r.user,
+        judge: r.judge,
       })
+    })
 
-      // Sort by timestamp
-      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    // Sort by timestamp
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-      setRecentActivity(activities.slice(0, 10))
-    } catch (error) {
-      console.error('Error loading recent activity:', error)
-    }
+    setRecentActivity(activities.slice(0, 15))
+  } catch (error) {
+    console.error('Error loading recent activity:', error)
   }
+}
+
+  const forceStatusTransition = async (questionId: string, newStatus: string) => {
+  try {
+    setActionLoading(`force-${questionId}`)
+    
+    const updateData: any = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    }
+
+    // Add timestamp based on status
+    switch (newStatus) {
+      case 'assigned':
+        updateData.assigned_at = new Date().toISOString()
+        break
+      case 'completed':
+        updateData.completed_at = new Date().toISOString()
+        break
+    }
+
+    const { error } = await supabase
+      .from('questions')
+      .update(updateData)
+      .eq('id', questionId)
+
+    if (error) throw error
+    
+    await loadRecentQuestions()
+    await loadStats()
+  } catch (error) {
+    console.error('Error forcing status transition:', error)
+  } finally {
+    setActionLoading(null)
+  }
+}
 
   const switchUserRole = async (userId: string, newRole: 'user' | 'judge' | 'admin') => {
     try {

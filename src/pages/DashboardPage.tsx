@@ -210,8 +210,12 @@ export function DashboardPage() {
                   key={question.id}
                   question={question}
                   onClick={() => {
-                    // Navigate to conversation if exists
-                    if (question.status !== 'waiting_for_judge') {
+                    // Always try to navigate to conversation
+                    if (question.status === 'waiting_for_judge') {
+                      // Question waiting for judge - could show a message or navigate anyway
+                      console.log('Question en attente d\'un juge')
+                    } else {
+                      // Navigate to existing conversation
                       navigate(`/conversation/${question.id}`)
                     }
                   }}

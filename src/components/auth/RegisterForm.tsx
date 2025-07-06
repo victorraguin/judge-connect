@@ -52,12 +52,13 @@ export function RegisterForm() {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">
-            Rejoindre MTG Judge
+            🚀 Rejoindre Juudge!
           </h2>
           <p className="text-gray-300">
+            Bienvenue dans la communauté ! 🎉<br />
             Ou{' '}
             <Link to="/login" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
-              connectez-vous à votre compte existant
+              connectez-vous si vous avez déjà un compte
             </Link>
           </p>
         </div>

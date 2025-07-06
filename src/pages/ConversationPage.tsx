@@ -31,6 +31,7 @@ export function ConversationPage() {
   const [rating, setRating] = useState(0)
   const [feedback, setFeedback] = useState('')
   const [showRating, setShowRating] = useState(false)
+  const [showTakeQuestion, setShowTakeQuestion] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -93,58 +94,23 @@ export function ConversationPage() {
           return
         }
 
-        // If it's a judge taking the question, create conversation and assign
+        // If it's a judge viewing a waiting question, show take question modal
         if (user?.profile?.role === 'judge' && questionData.status === 'waiting_for_judge') {
-          // Update question status and assign judge
-          await supabase
-            .from('questions')
-            .update({
-              status: 'assigned',
-              assigned_judge_id: user.id,
-              assigned_at: new Date().toISOString()
-            })
-            .eq('id', questionData.id)
-
-          // Create conversation
-          const { data: newConversation, error: createError } = await supabase
-            .from('conversations')
-            .insert({
-              question_id: questionData.id,
-              user_id: questionData.user_id,
-              judge_id: user.id,
-              status: 'active'
-            })
-            .select()
-            .single()
-
-          if (createError) throw createError
-
-          // Send system message
-          await supabase
-            .from('messages')
-            .insert({
-              conversation_id: newConversation.id,
-              sender_id: user.id,
-              content: `Bonjour ! Je suis ${user.profile?.full_name || 'votre juge'} et je vais vous aider avec votre question. N'hésitez pas à me donner plus de détails si nécessaire.`,
-              message_type: 'system'
-            })
-
-          // Reload conversation
-          const { data: updatedConversation } = await supabase
-            .from('conversations')
-            .select(`
-              *,
-              question:questions!conversations_question_id_fkey(
-                *,
-                user:profiles!questions_user_id_fkey(*)
-              ),
-              user:profiles!conversations_user_id_fkey(*),
-              judge:profiles!conversations_judge_id_fkey(*)
-            `)
-            .eq('id', newConversation.id)
-            .single()
-
-          conversationData = updatedConversation
+          // Show the take question modal instead of auto-assigning
+          setConversation({
+            id: '',
+            question_id: questionData.id,
+            user_id: questionData.user_id,
+            judge_id: '',
+            status: 'active',
+            started_at: '',
+            last_message_at: '',
+            question: questionData,
+            messages: []
+          } as any)
+          setShowTakeQuestion(true)
+          setLoading(false)
+          return
         } else {
           // Just viewing the question, redirect to questions page
           navigate('/questions')

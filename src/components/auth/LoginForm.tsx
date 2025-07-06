@@ -82,12 +82,13 @@ export function LoginForm() {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">
-            Connexion à MTG Judge
+            🔑 Connexion à Juudge!
           </h2>
           <p className="text-gray-300">
+            Prêt à rejoindre la partie ? 🎮<br />
             Ou{' '}
             <Link to="/register" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
-              créez un nouveau compte
+              créez votre compte de joueur
             </Link>
           </p>
         </div>

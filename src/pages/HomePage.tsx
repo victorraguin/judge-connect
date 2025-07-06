@@ -125,7 +125,7 @@ export function HomePage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Réponses Instantanées</h3>
             <p className="text-gray-400">
-              Obtenez des réponses en temps réel de juges certifiés disponibles 24h/24.
+              ⚡ Comme crier "Juudge!" en tournoi, mais encore plus rapide !
             </p>
           </div>
 
@@ -135,7 +135,7 @@ export function HomePage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Juges Certifiés</h3>
             <p className="text-gray-400">
-              Tous nos juges sont officiellement certifiés par Wizards of the Coast.
+              🏆 De vrais juges L1, L2 et L3 comme en tournoi officiel !
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export function HomePage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Système de Récompenses</h3>
             <p className="text-gray-400">
-              Gagnez des points et échangez-les contre des récompenses exclusives.
+              🎁 Plus vous participez, plus vous gagnez de récompenses cool !
             </p>
           </div>
         </div>
@@ -244,7 +244,7 @@ export function HomePage() {
         {/* Comment ça marche */}
         <div className="mb-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-12">
-            Comment ça marche ?
+            🎮 Comment ça marche ?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
@@ -253,7 +253,7 @@ export function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Posez votre question</h3>
               <p className="text-gray-400">
-                Décrivez votre situation de jeu avec tous les détails nécessaires.
+                🤔 Décrivez votre situation comme si vous étiez en tournoi !
               </p>
             </div>
             <div className="text-center">
@@ -262,7 +262,7 @@ export function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Connectez-vous avec un juge</h3>
               <p className="text-gray-400">
-                Un juge certifié prend en charge votre question en temps réel.
+                👨‍⚖️ Un vrai juge arrive à votre table virtuelle !
               </p>
             </div>
             <div className="text-center">
@@ -271,7 +271,7 @@ export function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Obtenez votre réponse</h3>
               <p className="text-gray-400">
-                Recevez une réponse officielle et gagnez des points de récompense.
+                ✅ Ruling officiel + points bonus pour votre participation !
               </p>
             </div>
           </div>
@@ -280,32 +280,32 @@ export function HomePage() {
         {/* Témoignages / Social Proof */}
         <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border border-gray-700 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
-            Rejoignez des milliers de joueurs satisfaits
+            🎉 Rejoignez la communauté MTG la plus cool !
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
             <div>
-              <div className="text-3xl font-bold text-blue-400 mb-2">98%</div>
-              <div className="text-gray-300">Taux de satisfaction</div>
+              <div className="text-3xl font-bold text-blue-400 mb-2">🔥 98%</div>
+              <div className="text-gray-300">Joueurs satisfaits</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-green-400 mb-2">&lt; 2min</div>
-              <div className="text-gray-300">Temps de réponse moyen</div>
+              <div className="text-3xl font-bold text-green-400 mb-2">⚡ < 2min</div>
+              <div className="text-gray-300">Réponse ultra-rapide</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-purple-400 mb-2">24/7</div>
-              <div className="text-gray-300">Disponibilité</div>
+              <div className="text-3xl font-bold text-purple-400 mb-2">🌟 24/7</div>
+              <div className="text-gray-300">Toujours là pour vous</div>
             </div>
           </div>
           {!user && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/register">
                 <Button size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
-                  Commencer maintenant
+                  🚀 C'est parti !
                 </Button>
               </Link>
               <Link to="/questions">
                 <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
-                  Voir les questions
+                  👀 Jeter un œil
                 </Button>
               </Link>
             </div>

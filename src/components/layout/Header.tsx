@@ -49,10 +49,15 @@ export function Header() {
             <Link to="/" className="flex items-center group">
               <Sparkles className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
               <div className="ml-3">
-                <h1 className="text-xl font-bold text-white">
-                  MTG Judge
-                </h1>
-                <p className="text-xs text-gray-400 -mt-1">Magic: The Gathering</p>
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-xl font-bold text-white">
+                    Juudge!
+                  </h1>
+                  <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+                    ALPHA
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 -mt-1">🎯 Appelez un juge MTG !</p>
               </div>
             </Link>
           </div>

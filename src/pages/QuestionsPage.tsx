@@ -110,22 +110,22 @@ export function QuestionsPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Questions MTG</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">🎯 Questions MTG</h1>
             <p className="text-gray-300">
               {user?.profile?.role === 'admin' 
-                ? 'Toutes les questions de la plateforme'
+                ? '👑 Toutes les questions de la plateforme'
                 : user?.profile?.role === 'judge'
-                ? 'Questions assignées et disponibles'
+                ? '⚖️ Vos missions de juge'
                 : showPublicOnly
-                ? 'Questions publiques de la communauté'
-                : 'Vos questions et questions publiques'
+                ? '🌍 Questions publiques de la communauté'
+                : '📋 Vos questions et découvertes publiques'
               }
             </p>
           </div>
           {user && user.profile?.role !== 'judge' && (
             <Button onClick={() => setShowCreateQuestion(true)} size="lg">
-              <Plus className="h-5 w-5 mr-2" />
-              Nouvelle question
+              <span className="mr-2">🙋‍♂️</span>
+              Juudge!
             </Button>
           )}
         </div>
@@ -197,20 +197,20 @@ export function QuestionsPage() {
                 <MessageSquare className="h-12 w-12 text-gray-400" />
               </div>
               <h3 className="text-xl font-medium text-white mb-2">
-                Aucune question trouvée
+                🔍 Aucune question trouvée
               </h3>
               <p className="text-gray-400 mb-6">
                 {searchTerm || selectedCategory || selectedStatus
-                  ? 'Essayez de modifier vos filtres de recherche.'
+                  ? '🎯 Essayez de modifier vos filtres de recherche.'
                   : user
-                  ? 'Commencez par poser votre première question sur Magic: The Gathering.'
-                  : 'Connectez-vous pour voir vos questions ou parcourir les questions publiques.'
+                  ? '🚀 Prêt à poser votre première question MTG ?'
+                  : '🔑 Connectez-vous pour voir vos questions ou explorer la communauté.'
                 }
               </p>
               {user && !searchTerm && !selectedCategory && !selectedStatus && (
                 <Button onClick={() => setShowCreateQuestion(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Poser ma première question
+                  <span className="mr-2">🚀</span>
+                  Ma première question
                 </Button>
               )}
             </div>

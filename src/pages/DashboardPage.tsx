@@ -104,10 +104,10 @@ export function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            Bonjour, {user?.profile?.full_name?.split(' ')[0] || 'Planeswalker'} 👋
+            🎮 Salut, {user?.profile?.full_name?.split(' ')[0] || 'Planeswalker'} !
           </h1>
           <p className="text-gray-400">
-            Gérez vos questions Magic: The Gathering et suivez vos progrès
+            ⚡ Prêt pour une nouvelle partie ? Gérez vos questions et suivez vos stats !
           </p>
         </div>
 
@@ -168,14 +168,14 @@ export function DashboardPage() {
             <Button
               onClick={() => setShowCreateQuestion(true)}
               size="lg"
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none animate-pulse"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Nouvelle question
+              <span className="mr-2">🙋‍♂️</span>
+              Juudge! J'ai une question
             </Button>
             <Button variant="outline" size="lg" className="flex-1 sm:flex-none">
-              <MessageSquare className="h-5 w-5 mr-2" />
-              Voir toutes mes questions
+              <span className="mr-2">📋</span>
+              Mes questions
             </Button>
           </div>
         </div>
@@ -183,9 +183,9 @@ export function DashboardPage() {
         {/* Recent Questions */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Mes questions récentes</h2>
+            <h2 className="text-xl font-semibold text-white">🔥 Mes dernières questions</h2>
             <Button variant="outline" size="sm">
-              Voir tout
+              📋 Tout voir
             </Button>
           </div>
 
@@ -193,14 +193,14 @@ export function DashboardPage() {
             <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-8 text-center">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
-                Aucune question pour le moment
+                🤔 Aucune question pour le moment
               </h3>
               <p className="text-gray-400 mb-4">
-                Commencez par poser votre première question sur Magic: The Gathering
+                🎯 Prêt à poser votre première question ? C'est parti !
               </p>
               <Button onClick={() => setShowCreateQuestion(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Poser ma première question
+                <span className="mr-2">🚀</span>
+                Ma première question
               </Button>
             </div>
           ) : (

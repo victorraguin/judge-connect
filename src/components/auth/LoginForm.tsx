@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+// src/components/auth/LoginForm.tsx
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -12,7 +13,7 @@ interface LoginFormData {
 }
 
 export function LoginForm() {
-  const { signIn } = useAuth()
+  const { signIn, user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -21,23 +22,54 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<LoginFormData>()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/')
+    }
+  }, [user, navigate])
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true)
       setError('')
       console.log('Login form submission:', data.email)
+      
       await signIn(data.email, data.password)
+      
+      // Reset form on success
+      reset()
+      
       console.log('Login successful, navigating...')
       navigate('/')
     } catch (err: any) {
       console.error('Login error:', err)
-      setError(err.message || 'Une erreur est survenue')
+      
+      // Handle specific error types
+      if (err.message?.includes('Invalid login credentials')) {
+        setError('Email ou mot de passe incorrect')
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Veuillez confirmer votre email avant de vous connecter')
+      } else if (err.message?.includes('Too many requests')) {
+        setError('Trop de tentatives de connexion. Veuillez réessayer plus tard.')
+      } else {
+        setError(err.message || 'Une erreur est survenue lors de la connexion')
+      }
     } finally {
       setLoading(false)
     }
   }
+
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -71,6 +103,7 @@ export function LoginForm() {
             <Input
               label="Email"
               type="email"
+              autoComplete="email"
               {...register('email', {
                 required: 'Email requis',
                 pattern: {
@@ -80,16 +113,23 @@ export function LoginForm() {
               })}
               error={errors.email?.message}
               placeholder="votre@email.com"
+              disabled={loading}
             />
             
             <Input
               label="Mot de passe"
               type="password"
+              autoComplete="current-password"
               {...register('password', {
                 required: 'Mot de passe requis',
+                minLength: {
+                  value: 6,
+                  message: 'Le mot de passe doit contenir au moins 6 caractères',
+                },
               })}
               error={errors.password?.message}
               placeholder="••••••••"
+              disabled={loading}
             />
 
             <Button
@@ -97,10 +137,20 @@ export function LoginForm() {
               className="w-full"
               loading={loading}
               size="lg"
+              disabled={loading}
             >
-              Se connecter
+              {loading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
         </div>
       </div>
     </div>

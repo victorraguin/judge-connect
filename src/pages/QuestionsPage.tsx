@@ -219,27 +219,7 @@ export function QuestionsPage() {
               <QuestionCard
                 key={question.id}
                 question={question}
-                onClick={() => {
-                  // Navigate to conversation/question view for all questions
-                  navigate(`/conversation/${question.id}`)
-                }}
-              />
-            ))
-          )}
-        </div>
-
-        <CreateQuestionModal
-          isOpen={showCreateQuestion}
-          onClose={() => setShowCreateQuestion(false)}
-          onSuccess={loadQuestions}
-        />
-      </div>
-    </div>
-  )
-}
-                    navigate(`/conversation/${question.id}`)
-                  }
-                }}
+                onClick={() => navigate(`/conversation/${question.id}`)}
               />
             ))
           )}

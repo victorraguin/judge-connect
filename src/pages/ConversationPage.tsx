@@ -1,4 +1,4 @@
-// src/pages/ConversationPage.tsx
+// src/pages/ConversationPage.tsx - PARTIE 1/4
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Send, Image, Paperclip, Star, Flag, CheckCircle, X, Search, Plus, Clock, AlertTriangle, Eye, MessageSquare } from 'lucide-react'
@@ -23,6 +23,7 @@ export function ConversationPage() {
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
+  // ✅ CORRECTION 1 : États améliorés avec gestion d'erreurs
   const [question, setQuestion] = useState<Question & { user: Profile } | null>(null)
   const [loading, setLoading] = useState(true)
   const [messageText, setMessageText] = useState('')
@@ -36,34 +37,52 @@ export function ConversationPage() {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [userProfiles, setUserProfiles] = useState<{ [key: string]: Profile }>({})
   const [actualConversationId, setActualConversationId] = useState<string | null>(null)
+  
+  // ✅ NOUVEAUX ÉTATS pour un meilleur débogage
+  const [chatError, setChatError] = useState<string>('')
+  const [isReconnecting, setIsReconnecting] = useState(false)
 
-  // Use realtime conversation hook
+  // ✅ CORRECTION 2 : Hook realtime avec fallback amélioré
   const {
     messages,
-    conversation,
+    conversation: realtimeConversation,
     onlineUsers,
     typingUsers,
     sendMessage: realtimeSendMessage,
     sendTypingIndicator,
     loadConversation
   } = useRealtimeConversation({ 
-    conversationId: actualConversationId
+    conversationId: actualConversationId || id // Fallback sur id si actualConversationId est null
   })
 
-  // Effects
+  // ✅ CORRECTION 3 : Variable de conversation unifiée
+  const conversation = realtimeConversation || question
+  // src/pages/ConversationPage.tsx - PARTIE 2/4
+
+  // ✅ CORRECTION 4 : Effects améliorés avec logs de debug
   useEffect(() => {
     if (id) {
+      console.log('🔄 Loading conversation/question for ID:', id)
       loadQuestionOrConversation()
     }
   }, [id])
 
   useEffect(() => {
     if (messages.length > 0) {
+      console.log(`📄 Scrolling to bottom (${messages.length} messages)`)
       scrollToBottom()
     }
   }, [messages])
 
-  // Timer for timeout countdown
+  // ✅ CORRECTION 5 : Synchronisation des données de conversation
+  useEffect(() => {
+    if (realtimeConversation && !conversation) {
+      console.log('🔄 Syncing conversation data from realtime hook')
+      // Cette logique est déjà gérée par la variable unifiée conversation
+    }
+  }, [realtimeConversation])
+
+  // ✅ CORRECTION 6 : Timer pour timeout countdown amélioré
   useEffect(() => {
     if (question?.timeout_at) {
       const interval = setInterval(() => {
@@ -82,36 +101,104 @@ export function ConversationPage() {
     }
   }, [question?.timeout_at])
 
-  // Load user profiles for typing indicators
+  // ✅ CORRECTION 7 : Chargement des profils utilisateurs amélioré
   useEffect(() => {
     const loadUserProfiles = async () => {
-      if (conversation) {
-        const userIds = [conversation.user_id, conversation.judge_id].filter(Boolean)
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', userIds)
+      const currentConversation = realtimeConversation || conversation
+      if (currentConversation) {
+        const userIds = [currentConversation.user_id, currentConversation.judge_id].filter(Boolean)
+        
+        try {
+          const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds)
 
-        const profileMap: { [key: string]: Profile } = {}
-        profiles?.forEach(profile => {
-          profileMap[profile.id] = profile
-        })
-        setUserProfiles(profileMap)
+          if (error) throw error
+
+          const profileMap: { [key: string]: Profile } = {}
+          profiles?.forEach(profile => {
+            profileMap[profile.id] = profile
+          })
+          setUserProfiles(profileMap)
+          console.log('👥 User profiles loaded:', Object.keys(profileMap))
+        } catch (error) {
+          console.error('❌ Error loading user profiles:', error)
+        }
       }
     }
 
     loadUserProfiles()
-  }, [conversation])
+  }, [realtimeConversation, conversation])
 
+  // ✅ CORRECTION 8 : Gestion de la reconnexion réseau
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('🌐 Back online, reloading conversation data')
+      setIsReconnecting(true)
+      setChatError('')
+      if (actualConversationId) {
+        loadConversation?.()
+      }
+      setTimeout(() => setIsReconnecting(false), 2000)
+    }
+
+    const handleOffline = () => {
+      console.log('📴 Gone offline')
+      setChatError('Connexion perdue - reconnexion en cours...')
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [actualConversationId, loadConversation])
+
+  // ✅ FONCTIONS UTILITAIRES
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleChatError = (error: any, context: string) => {
+    console.error(`❌ Chat error in ${context}:`, error)
+    setChatError(`Erreur dans ${context}: ${error.message || 'Erreur inconnue'}`)
+    
+    // Auto-clear error after 5 seconds
+    setTimeout(() => setChatError(''), 5000)
+  }
+
+  // ✅ FONCTION DE DEBUG (à supprimer en production)
+  const debugChatState = () => {
+    console.log('🐛 CHAT DEBUG STATE:', {
+      id,
+      actualConversationId,
+      hasUser: !!user,
+      messagesCount: messages.length,
+      hasConversation: !!conversation,
+      hasRealtimeConversation: !!realtimeConversation,
+      conversationStatus: conversation?.status || realtimeConversation?.status,
+      onlineUsersCount: onlineUsers.length,
+      typingUsersCount: typingUsers.length
+    })
+  }
+
+  // Exposer la fonction de debug globalement (développement uniquement)
+  if (process.env.NODE_ENV === 'development') {
+    (window as any).debugChatState = debugChatState
+  }
+
+  // src/pages/ConversationPage.tsx - PARTIE 3/4
+
+  // ✅ CORRECTION 9 : loadQuestionOrConversation améliorée
   const loadQuestionOrConversation = async () => {
     if (!id) return
 
     try {
       setLoading(true)
+      console.log('🔍 Loading question or conversation for ID:', id)
 
       // First try to load existing conversation by conversation ID
       let { data: conversationData, error: convError } = await supabase
@@ -130,6 +217,7 @@ export function ConversationPage() {
 
       // If no conversation found, try to find conversation by question_id
       if (!conversationData) {
+        console.log('🔍 No conversation found by ID, trying by question_id')
         const { data: convByQuestion, error: convByQuestionError } = await supabase
           .from('conversations')
           .select(`
@@ -150,9 +238,16 @@ export function ConversationPage() {
 
       if (conversationData) {
         // Conversation exists, set the actual conversation ID
+        console.log('✅ Found existing conversation:', conversationData.id)
         setActualConversationId(conversationData.id)
+        
+        // Set question data immediately to avoid loading delay
+        if (conversationData.question) {
+          setQuestion(conversationData.question)
+        }
       } else {
         // No conversation found, try to load question
+        console.log('🔍 No conversation found, loading question...')
         const { data: questionData, error: questionError } = await supabase
           .from('questions')
           .select(`
@@ -162,7 +257,10 @@ export function ConversationPage() {
           .eq('id', id)
           .single()
 
-        if (questionError) throw questionError
+        if (questionError) {
+          console.error('❌ Error loading question:', questionError)
+          throw questionError
+        }
 
         // Check if user can access this question
         const canAccess = questionData.user_id === user?.id || 
@@ -172,10 +270,12 @@ export function ConversationPage() {
                          (user?.profile?.role === 'judge' && questionData.status === 'waiting_for_judge')
 
         if (!canAccess) {
+          console.log('❌ Access denied to question')
           navigate('/questions')
           return
         }
 
+        console.log('✅ Question loaded successfully')
         setQuestion(questionData)
 
         // If it's a judge viewing a waiting question, show take question modal
@@ -185,18 +285,24 @@ export function ConversationPage() {
       }
 
     } catch (error) {
-      console.error('Error loading question/conversation:', error)
+      console.error('❌ Error loading question/conversation:', error)
+      handleChatError(error, 'chargement de la conversation')
       navigate('/questions')
     } finally {
       setLoading(false)
     }
   }
 
+  // ✅ CORRECTION 10 : takeQuestion améliorée
   const takeQuestion = async () => {
-    if (!question || !user || user.profile?.role !== 'judge') return
+    if (!question || !user || user.profile?.role !== 'judge') {
+      console.log('❌ Cannot take question: invalid conditions')
+      return
+    }
 
     try {
       setTakingQuestion(true)
+      console.log('⚖️ Taking question:', question.id)
 
       // Update question status and assign judge
       const { error: updateError } = await supabase
@@ -208,7 +314,10 @@ export function ConversationPage() {
         })
         .eq('id', question.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('❌ Error updating question:', updateError)
+        throw updateError
+      }
 
       // Create conversation
       const { data: newConversation, error: createError } = await supabase
@@ -224,7 +333,12 @@ export function ConversationPage() {
         .select()
         .single()
 
-      if (createError) throw createError
+      if (createError) {
+        console.error('❌ Error creating conversation:', createError)
+        throw createError
+      }
+
+      console.log('✅ Conversation created:', newConversation.id)
 
       // Add system message to indicate conversation started
       await supabase
@@ -243,34 +357,62 @@ export function ConversationPage() {
         user.id
       )
 
+      console.log('✅ Question taken successfully, navigating to conversation')
       // Navigate to the new conversation
       navigate(`/conversation/${newConversation.id}`)
 
     } catch (error) {
-      console.error('Error taking question:', error)
+      console.error('❌ Error taking question:', error)
+      handleChatError(error, 'prise en charge de la question')
     } finally {
       setTakingQuestion(false)
     }
   }
 
+  // ✅ CORRECTION 11 : sendMessageHandler améliorée
   const sendMessageHandler = async () => {
-    if (!messageText.trim() || !conversation || !user) return
+    if (!messageText.trim()) {
+      console.log('⚠️ Cannot send empty message')
+      return
+    }
+    
+    // Utiliser actualConversationId au lieu de conversation pour plus de fiabilité
+    if (!actualConversationId || !user) {
+      console.log('⚠️ Missing conversation ID or user', { 
+        conversationId: actualConversationId, 
+        user: !!user 
+      })
+      handleChatError(new Error('Données manquantes'), 'envoi de message')
+      return
+    }
 
     try {
+      console.log('📤 Sending message via handler')
       setSending(true)
       await realtimeSendMessage(messageText)
       setMessageText('')
+      console.log('✅ Message sent successfully')
+      
+      // Clear any previous errors
+      setChatError('')
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('❌ Error sending message:', error)
+      handleChatError(error, 'envoi de message')
     } finally {
       setSending(false)
     }
   }
 
+  // ✅ CORRECTION 12 : sendCardMessage améliorée
   const sendCardMessage = async (card: any) => {
-    if (!conversation || !user) return
+    if (!actualConversationId || !user) {
+      console.log('⚠️ Cannot send card: missing conversation or user')
+      handleChatError(new Error('Conversation ou utilisateur manquant'), 'envoi de carte')
+      return
+    }
 
     try {
+      console.log('🃏 Sending card:', card.name)
       const cardData = {
         name: card.name,
         image_url: card.image_uris?.normal || card.image_uris?.large,
@@ -281,13 +423,27 @@ export function ConversationPage() {
       }
 
       await realtimeSendMessage(`Carte partagée: ${card.name}`, { card: cardData })
+      console.log('✅ Card sent successfully')
+      
+      setChatError('')
     } catch (error) {
-      console.error('Error sending card:', error)
+      console.error('❌ Error sending card:', error)
+      handleChatError(error, 'envoi de carte')
     }
   }
 
+  // ✅ CORRECTION 13 : completeConversation améliorée
   const completeConversation = async () => {
-    if (!conversation || !user) return
+    // Utiliser les données de conversation les plus récentes
+    const currentConversation = realtimeConversation
+    
+    if (!currentConversation || !user) {
+      console.log('⚠️ Cannot complete conversation: missing data')
+      handleChatError(new Error('Données de conversation manquantes'), 'finalisation')
+      return
+    }
+
+    console.log('✅ Completing conversation:', currentConversation.id)
 
     try {
       // Update conversation status
@@ -297,7 +453,7 @@ export function ConversationPage() {
           status: 'ended',
           ended_at: new Date().toISOString()
         })
-        .eq('id', conversation.id)
+        .eq('id', currentConversation.id)
 
       // Update question status
       await supabase
@@ -306,13 +462,13 @@ export function ConversationPage() {
           status: 'completed',
           completed_at: new Date().toISOString()
         })
-        .eq('id', conversation.question.id)
+        .eq('id', currentConversation.question.id)
 
       // Add system message
       await supabase
         .from('messages')
         .insert({
-          conversation_id: conversation.id,
+          conversation_id: currentConversation.id,
           sender_id: user.id,
           content: 'Question marquée comme résolue par le juge.',
           message_type: 'system'
@@ -320,33 +476,39 @@ export function ConversationPage() {
 
       // Send notification to user
       await notificationService.notifyQuestionCompleted(
-        conversation.id,
-        conversation.user_id,
+        currentConversation.id,
+        currentConversation.user_id,
         user.id
       )
 
       // Show rating modal if user
-      if (user.id === conversation.user_id) {
+      if (user.id === currentConversation.user_id) {
         setShowRating(true)
       } else {
         navigate('/questions')
       }
 
+      console.log('✅ Conversation completed successfully')
     } catch (error) {
-      console.error('Error completing conversation:', error)
+      console.error('❌ Error completing conversation:', error)
+      handleChatError(error, 'finalisation de la conversation')
     }
   }
 
+  // src/pages/ConversationPage.tsx - PARTIE 4/4
+
+  // ✅ CORRECTION 14 : submitRating inchangée mais avec gestion d'erreur
   const submitRating = async () => {
-    if (!conversation || !user || rating === 0) return
+    const currentConversation = realtimeConversation
+    if (!currentConversation || !user || rating === 0) return
 
     try {
       await supabase
         .from('ratings')
         .insert({
-          conversation_id: conversation.id,
+          conversation_id: currentConversation.id,
           user_id: user.id,
-          judge_id: conversation.judge_id,
+          judge_id: currentConversation.judge_id,
           rating,
           feedback: feedback.trim() || null,
           is_accepted: true
@@ -356,22 +518,22 @@ export function ConversationPage() {
       await supabase
         .from('rewards')
         .insert({
-          judge_id: conversation.judge_id,
+          judge_id: currentConversation.judge_id,
           points_earned: rating * 10, // 10 points per star
           reason: `Question résolue avec note ${rating}/5`,
-          conversation_id: conversation.id
+          conversation_id: currentConversation.id
         })
 
       // Send notification to judge about rating
       await notificationService.notifyRatingReceived(
-        conversation.judge_id,
+        currentConversation.judge_id,
         rating,
-        conversation.id
+        currentConversation.id
       )
 
       // Send notification about reward earned
       await notificationService.notifyRewardEarned(
-        conversation.judge_id,
+        currentConversation.judge_id,
         rating * 10,
         `Question résolue avec note ${rating}/5`
       )
@@ -380,7 +542,7 @@ export function ConversationPage() {
       const { data: judgeInfo } = await supabase
         .from('judge_info')
         .select('total_questions_answered, average_rating, total_points')
-        .eq('user_id', conversation.judge_id)
+        .eq('user_id', currentConversation.judge_id)
         .single()
 
       if (judgeInfo) {
@@ -397,12 +559,13 @@ export function ConversationPage() {
             average_rating: newAverage,
             total_points: newPoints
           })
-          .eq('user_id', conversation.judge_id)
+          .eq('user_id', currentConversation.judge_id)
       }
 
       navigate('/questions')
     } catch (error) {
       console.error('Error submitting rating:', error)
+      handleChatError(error, 'soumission de l\'évaluation')
     }
   }
 
@@ -410,53 +573,77 @@ export function ConversationPage() {
     sendTypingIndicator()
   }
 
+  // Fonctions utilitaires pour le statut
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'waiting_for_judge':
-        return 'text-yellow-400'
-      case 'assigned':
-        return 'text-blue-400'
-      case 'in_progress':
-        return 'text-green-400'
-      case 'completed':
-        return 'text-green-400'
-      case 'disputed':
-        return 'text-red-400'
-      default:
-        return 'text-gray-400'
+      case 'waiting_for_judge': return 'text-yellow-400'
+      case 'assigned': return 'text-blue-400'
+      case 'in_progress': return 'text-green-400'
+      case 'completed': return 'text-green-400'
+      case 'disputed': return 'text-red-400'
+      default: return 'text-gray-400'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'waiting_for_judge':
-        return '🕐 En attente de juge'
-      case 'assigned':
-        return '⚖️ Juge assigné'
-      case 'in_progress':
-        return '💬 En cours de traitement'
-      case 'completed':
-        return '✅ Résolue'
-      case 'disputed':
-        return '⚠️ En dispute'
-      default:
-        return status
+      case 'waiting_for_judge': return '🕐 En attente de juge'
+      case 'assigned': return '⚖️ Juge assigné'
+      case 'in_progress': return '💬 En cours de traitement'
+      case 'completed': return '✅ Résolue'
+      case 'disputed': return '⚠️ En dispute'
+      default: return status
     }
   }
 
+  // ✅ AFFICHAGE CONDITIONNEL AVEC GESTION D'ERREURS
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-300">🔄 Chargement...</p>
+          {isReconnecting && (
+            <p className="text-blue-400 text-sm mt-2">📡 Reconnexion en cours...</p>
+          )}
         </div>
       </div>
     )
   }
 
-  // Show question view for judges who haven't taken the question yet
-  if (question && !conversation) {
+  // ✅ AFFICHAGE DES ERREURS
+  if (chatError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">❌ Erreur de chat</h2>
+          <p className="text-red-400 mb-4">{chatError}</p>
+          <div className="space-y-2">
+            <Button onClick={() => window.location.reload()} variant="primary">
+              🔄 Recharger la page
+            </Button>
+            <Button onClick={() => navigate('/questions')} variant="outline">
+              🔙 Retour aux questions
+            </Button>
+          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <Button 
+              onClick={() => (window as any).debugChatState?.()} 
+              variant="ghost" 
+              size="sm"
+              className="mt-4"
+            >
+              🐛 Debug état
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ VUE QUESTION POUR LES JUGES (inchangée mais avec meilleure gestion d'erreur)
+  if (question && !realtimeConversation) {
     const isJudge = user?.profile?.role === 'judge'
     const canTakeQuestion = isJudge && question.status === 'waiting_for_judge'
     const isOwner = user?.id === question.user_id
@@ -646,12 +833,14 @@ export function ConversationPage() {
     )
   }
 
-  if (!conversation) {
+  // ✅ VÉRIFICATION DE L'EXISTENCE DE LA CONVERSATION
+  if (!realtimeConversation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-300">❌ Conversation non trouvée</p>
-          <Button onClick={() => navigate('/questions')} className="mt-4">
+          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-300 mb-4">❌ Conversation non trouvée</p>
+          <Button onClick={() => navigate('/questions')}>
             🔙 Retour aux questions
           </Button>
         </div>
@@ -659,13 +848,21 @@ export function ConversationPage() {
     )
   }
 
-  const isJudge = user?.id === conversation.judge_id
-  const isUser = user?.id === conversation.user_id
-  const canComplete = isJudge && conversation.status === 'active' && (conversation.question?.status === 'in_progress' || conversation.question?.status === 'assigned')
-  const canViewOnly = conversation.question?.is_public && !isJudge && !isUser
+  // ✅ INTERFACE PRINCIPALE DE CONVERSATION
+  const isJudge = user?.id === realtimeConversation.judge_id
+  const isUser = user?.id === realtimeConversation.user_id
+  const canComplete = isJudge && realtimeConversation.status === 'active' && (realtimeConversation.question?.status === 'in_progress' || realtimeConversation.question?.status === 'assigned')
+  const canViewOnly = realtimeConversation.question?.is_public && !isJudge && !isUser
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+      {/* ✅ INDICATEUR DE RECONNEXION */}
+      {isReconnecting && (
+        <div className="bg-blue-900/20 border-b border-blue-700 p-2 text-center">
+          <span className="text-blue-300 text-sm">📡 Reconnexion en cours...</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -675,16 +872,16 @@ export function ConversationPage() {
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-white">
-                {conversation.question?.title}
+                {realtimeConversation.question?.title}
               </h1>
               <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <span>avec {isJudge ? conversation.question?.user?.full_name : conversation.judge?.full_name}</span>
+                <span>avec {isJudge ? realtimeConversation.question?.user?.full_name : realtimeConversation.judge?.full_name}</span>
                 <Badge variant="info" size="sm">
-                  {conversation.question?.category}
+                  {realtimeConversation.question?.category}
                 </Badge>
-                <Badge variant={conversation.status === 'active' ? 'success' : 'default'} size="sm">
-                  <span className={getStatusColor(conversation.question?.status || '')}>
-                    {getStatusLabel(conversation.question?.status || '')}
+                <Badge variant={realtimeConversation.status === 'active' ? 'success' : 'default'} size="sm">
+                  <span className={getStatusColor(realtimeConversation.question?.status || '')}>
+                    {getStatusLabel(realtimeConversation.question?.status || '')}
                   </span>
                 </Badge>
                 {canViewOnly && (
@@ -696,14 +893,14 @@ export function ConversationPage() {
           
           <div className="flex items-center space-x-2">
             {/* Online indicator */}
-            {conversation.judge_id && conversation.user_id && (
+            {realtimeConversation.judge_id && realtimeConversation.user_id && (
               <OnlineIndicator
                 onlineUsers={onlineUsers}
                 currentUserId={user?.id || ''}
-                otherUserId={isJudge ? conversation.user_id : conversation.judge_id}
+                otherUserId={isJudge ? realtimeConversation.user_id : realtimeConversation.judge_id}
                 otherUserName={isJudge ? 
-                  conversation.question?.user?.full_name || conversation.question?.user?.email || 'Utilisateur' :
-                  conversation.judge?.full_name || conversation.judge?.email || 'Juge'
+                  realtimeConversation.question?.user?.full_name || realtimeConversation.question?.user?.email || 'Utilisateur' :
+                  realtimeConversation.judge?.full_name || realtimeConversation.judge?.email || 'Juge'
                 }
               />
             )}
@@ -726,24 +923,24 @@ export function ConversationPage() {
               <span className="mr-2">📋</span>
               Question originale :
             </h3>
-            <p className="text-gray-300 mb-3">{conversation.question?.content}</p>
-            {conversation.question?.image_url && (
+            <p className="text-gray-300 mb-3">{realtimeConversation.question?.content}</p>
+            {realtimeConversation.question?.image_url && (
               <img
-                src={conversation.question.image_url}
+                src={realtimeConversation.question.image_url}
                 alt="Question attachment"
                 className="max-w-sm rounded-lg border border-gray-600"
               />
             )}
             <div className="flex items-center justify-between mt-3 text-sm text-gray-400">
               <span>
-                📅 Posée par {conversation.question?.user?.full_name} • {' '}
-                {formatDistanceToNow(new Date(conversation.question?.created_at || ''), {
+                📅 Posée par {realtimeConversation.question?.user?.full_name} • {' '}
+                {formatDistanceToNow(new Date(realtimeConversation.question?.created_at || ''), {
                   addSuffix: true,
                   locale: fr
                 })}
               </span>
               <span>
-                ⚖️ Assignée {formatDistanceToNow(new Date(conversation.started_at), {
+                ⚖️ Assignée {formatDistanceToNow(new Date(realtimeConversation.started_at), {
                   addSuffix: true,
                   locale: fr
                 })}
@@ -784,7 +981,7 @@ export function ConversationPage() {
                 key={message.id}
                 message={message}
                 isOwn={message.sender_id === user?.id}
-                isJudge={message.sender_id === conversation.judge_id}
+                isJudge={message.sender_id === realtimeConversation.judge_id}
               />
             ))
           )}
@@ -800,7 +997,7 @@ export function ConversationPage() {
       </div>
 
       {/* Message Input */}
-      {conversation.status === 'active' && !canViewOnly && (
+      {realtimeConversation.status === 'active' && !canViewOnly && (
         <div className="bg-gray-800/50 backdrop-blur-sm border-t border-gray-700 p-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-3">
@@ -847,15 +1044,15 @@ export function ConversationPage() {
       )}
 
       {/* Conversation ended notice */}
-      {conversation.status === 'ended' && (
+      {realtimeConversation.status === 'ended' && (
         <div className="bg-green-900/20 border-t border-green-700 p-4">
           <div className="max-w-4xl mx-auto text-center">
             <div className="flex items-center justify-center text-green-300 text-sm">
               <CheckCircle className="h-4 w-4 mr-2" />
               ✅ Cette conversation a été marquée comme résolue
-              {conversation.ended_at && (
+              {realtimeConversation.ended_at && (
                 <span className="ml-2">
-                  • {formatDistanceToNow(new Date(conversation.ended_at), {
+                  • {formatDistanceToNow(new Date(realtimeConversation.ended_at), {
                     addSuffix: true,
                     locale: fr
                   })}

@@ -201,7 +201,7 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
           {/* Content Textarea */}
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-white mb-3">
-              Description détaillée <span className="text-red-400">*</span>
+              📝 Description détaillée <span className="text-red-400">*</span>
             </label>
             <textarea
               {...register('content', {
@@ -212,8 +212,8 @@ export function CreateQuestionModal({ isOpen, onClose, onSuccess }: CreateQuesti
                 },
               })}
               rows={6}
-              className="block w-full rounded-xl bg-gray-900/50 border-2 border-gray-600 text-white placeholder-gray-400 shadow-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-400/20 text-lg transition-all duration-200 min-h-[140px] px-6 py-4 resize-none backdrop-blur-sm"
-              placeholder="Décrivez votre situation en détail..."
+              className="block w-full rounded-xl bg-gray-900/50 border-2 border-gray-600 text-white placeholder-gray-400 shadow-lg focus:border-blue-400 focus:ring-4 focus:ring-blue-400/20 text-lg transition-all duration-200 min-h-[140px] px-6 py-4 resize-none backdrop-blur-sm hover:border-gray-500"
+              placeholder="🎮 Décrivez votre situation comme si vous étiez en tournoi..."
             />
             <div className="flex justify-between items-center mt-1">
               {errors.content && (

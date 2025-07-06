@@ -94,23 +94,58 @@ export function ConversationPage() {
           return
         }
 
-        // If it's a judge viewing a waiting question, show take question modal
+        // If it's a judge taking the question, create conversation and assign
         if (user?.profile?.role === 'judge' && questionData.status === 'waiting_for_judge') {
-          // Show the take question modal instead of auto-assigning
-          setConversation({
-            id: '',
-            question_id: questionData.id,
-            user_id: questionData.user_id,
-            judge_id: '',
-            status: 'active',
-            started_at: '',
-            last_message_at: '',
-            question: questionData,
-            messages: []
-          } as any)
-          setShowTakeQuestion(true)
-          setLoading(false)
-          return
+          // Update question status and assign judge
+          await supabase
+            .from('questions')
+            .update({
+              status: 'assigned',
+              assigned_judge_id: user.id,
+              assigned_at: new Date().toISOString()
+            })
+            .eq('id', questionData.id)
+
+          // Create conversation
+          const { data: newConversation, error: createError } = await supabase
+            .from('conversations')
+            .insert({
+              question_id: questionData.id,
+              user_id: questionData.user_id,
+              judge_id: user.id,
+              status: 'active'
+            })
+            .select()
+            .single()
+
+          if (createError) throw createError
+
+          // Send system message
+          await supabase
+            .from('messages')
+            .insert({
+              conversation_id: newConversation.id,
+              sender_id: user.id,
+              content: `Bonjour ! Je suis ${user.profile?.full_name || 'votre juge'} et je vais vous aider avec votre question. N'hésitez pas à me donner plus de détails si nécessaire.`,
+              message_type: 'system'
+            })
+
+          // Reload conversation
+          const { data: updatedConversation } = await supabase
+            .from('conversations')
+            .select(`
+              *,
+              question:questions!conversations_question_id_fkey(
+                *,
+                user:profiles!questions_user_id_fkey(*)
+              ),
+              user:profiles!conversations_user_id_fkey(*),
+              judge:profiles!conversations_judge_id_fkey(*)
+            `)
+            .eq('id', newConversation.id)
+            .single()
+
+          conversationData = updatedConversation
         } else {
           // Just viewing the question, redirect to questions page
           navigate('/questions')
@@ -513,14 +548,14 @@ export function ConversationPage() {
                   onClick={() => navigate('/questions')}
                   className="flex-1"
                 >
-                  Passer
+                  ⏭️ Passer
                 </Button>
                 <Button
                   onClick={submitRating}
                   disabled={rating === 0}
                   className="flex-1"
                 >
-                  Envoyer
+                  🚀 Envoyer
                 </Button>
               </div>
             </div>
@@ -528,6 +563,73 @@ export function ConversationPage() {
         </div>
       )}
 
+      {/* Take Question Modal */}
+      {showTakeQuestion && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" />
+            <div className="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 p-8">
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-2xl">⚖️</span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  🎯 Prendre cette question ?
+                </h3>
+                <p className="text-gray-300">
+                  Vous allez devenir le juge assigné à cette question
+                </p>
+              </div>
+              
+              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-6 mb-6 border border-blue-500/30">
+                <h4 className="font-semibold text-white mb-3 flex items-center">
+                  <span className="mr-2">📋</span>
+                  Rappel important :
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start">
+                    <span className="mr-2 text-yellow-400">⏰</span>
+                    <span>Vous avez <strong>8 minutes</strong> pour répondre après avoir pris la question</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-blue-400">💬</span>
+                    <span>Une conversation privée sera créée avec le joueur</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-green-400">⭐</span>
+                    <span>Le joueur pourra vous évaluer à la fin</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-purple-400">🏆</span>
+                    <span>Vous gagnerez des points selon votre performance</span>
+                  </li>
+                </ul>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowTakeQuestion(false)
+                    navigate('/questions')
+                  }}
+                  className="flex-1"
+                >
+                  ❌ Annuler
+                </Button>
+                <Button
+                  onClick={takeQuestion}
+                  disabled={loading}
+                  className="flex-1"
+                  loading={loading}
+                >
+                  <span className="mr-2">⚖️</span>
+                  {loading ? 'Prise en cours...' : 'Prendre la question'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+              </div>
       <CardSearchModal
         isOpen={showCardSearch}
         onClose={() => setShowCardSearch(false)}

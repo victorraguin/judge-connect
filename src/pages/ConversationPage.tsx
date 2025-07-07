@@ -201,7 +201,7 @@ export function ConversationPage() {
       console.log('🔍 Loading question or conversation for ID:', id)
 
       // First try to load existing conversation by conversation ID
-      let { data: conversationData, error: convError } = await supabase
+      let { data: conversationData } = await supabase
         .from('conversations')
         .select(`
           *,
@@ -233,7 +233,9 @@ export function ConversationPage() {
           .maybeSingle()
 
         conversationData = convByQuestion
-        convError = convByQuestionError
+        if (convByQuestionError) {
+          console.error('Error loading conversation by question:', convByQuestionError)
+        }
       }
 
       if (conversationData) {

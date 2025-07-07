@@ -1,14 +1,13 @@
 // src/components/auth/AuthGuard.tsx
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { authService } from '../../lib/auth'
 
 interface AuthGuardProps {
   children: React.ReactNode
-  fallback?: React.ReactNode
 }
 
-export function AuthGuard({ children, fallback }: AuthGuardProps) {
+export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, refreshAuth } = useAuth()
 
   useEffect(() => {

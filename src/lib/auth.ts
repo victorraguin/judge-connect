@@ -10,9 +10,6 @@ export interface AuthUser {
 
 export const authService = {
   async signUp(email: string, password: string, fullName?: string) {
-    // Clear any existing session first
-    await supabase.auth.signOut()
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -30,9 +27,6 @@ export const authService = {
   async signIn(email: string, password: string) {
     console.log('Attempting to sign in with:', email)
     
-    // Clear any existing session first to avoid conflicts
-    await supabase.auth.signOut()
-    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -42,7 +36,7 @@ export const authService = {
     console.log('Sign in successful:', data.user?.id)
     
     // Force session refresh to ensure we have the latest session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { error: sessionError } = await supabase.auth.getSession()
     if (sessionError) throw sessionError
     
     return data
